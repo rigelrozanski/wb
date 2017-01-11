@@ -38,6 +38,13 @@ func rootRun(cmd *cobra.Command, args []string) {
 		fmt.Println(err.Error())
 	}
 
+	if _, err := os.Stat(wbPath); os.IsNotExist(err) { //does the whiteboard file not yet exist?
+		err = ioutil.WriteFile("whiteboard", []byte("Squeaky Clean Whiteboard \n"), 0644)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	}
+
 	wb, err := ioutil.ReadFile(wbPath)
 	if err != nil {
 		fmt.Println(err.Error())

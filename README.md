@@ -8,8 +8,14 @@ The intention behind this program is to provide a space for quickly retrieving a
 
 ### Installation
 
-`go get github.com/rigelrozanski/whiteboard`
-`go install rigelrozanski/whiteboard`
+1. Make sure you [have Go installed][1] and [put $GOPATH/bin in your $PATH][2]
+2. [Install Cobra][3]
+3. run `go get github.com/rigelrozanski/wb`
+4. run `go install wb`
+
+[1]: https://golang.org/doc/install
+[2]: https://github.com/tendermint/tendermint/wiki/Setting-GOPATH 
+[3]: https://github.com/spf13/cobra#installing
 
 ###  Usage
 
