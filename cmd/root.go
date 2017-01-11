@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var wbName string
+
 var RootCmd = &cobra.Command{
 	Use:   "wb",
 	Short: "read whiteboard",
@@ -17,6 +19,7 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
+	RootCmd.PersistentFlags().StringVarP(&wbName, "name", "b", "wb", "specific whiteboard")
 }
 
 func getWbPath() (string, error) {
@@ -27,7 +30,9 @@ func getWbPath() (string, error) {
 
 	goPath, _ := os.LookupEnv("GOPATH")
 
-	relPath, err := filepath.Rel(curPath, path.Join(goPath, "/src/github.com/rigelrozanski/wb/whiteboard"))
+	relPath, err := filepath.Rel(curPath, path.Join(goPath,
+		"/src/github.com/rigelrozanski/wb",
+		wbName))
 	return relPath, err
 }
 
@@ -39,7 +44,7 @@ func rootRun(cmd *cobra.Command, args []string) {
 	}
 
 	if _, err := os.Stat(wbPath); os.IsNotExist(err) { //does the whiteboard file not yet exist?
-		err = ioutil.WriteFile("whiteboard", []byte("Squeaky Clean Whiteboard \n"), 0644)
+		err = ioutil.WriteFile(wbName, []byte("Squeaky clean whiteboard for "+wbName+"\n"), 0644)
 		if err != nil {
 			fmt.Println(err.Error())
 		}
