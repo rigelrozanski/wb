@@ -72,7 +72,7 @@ func main() {
 		}
 		switch {
 		case noRsrvArgs != 1:
-			fmt.Println("invalid use of reserved arguments, must enter *one* of either 'new', 'edit', or 'delete'")
+			fmt.Printf("invalid use of reserved arguments, must enter *one* of either %v, %v, or %v\n", keyNew, keyEdit, keyRemove)
 			return
 		case Bnew:
 			new(args[boardArg])
@@ -180,7 +180,7 @@ func edit(wbName string) {
 	}
 
 	if !wbExists(wbPath) {
-		fmt.Println("error can't edit non-existent white board, please create it first by using 'new'")
+		fmt.Println("error can't edit non-existent white board, please create it first by using ", keyNew)
 		return
 	}
 
@@ -204,7 +204,7 @@ func view(wbName string) {
 	case !wbExists(wbPath) && wbName == defaultWB:
 		new(defaultWB) //automatically create the default wb if it doesn't exist
 	case !wbExists(wbPath) && wbName != defaultWB:
-		fmt.Println("error can't view non-existent white board, please create it first by using 'new'")
+		fmt.Println("error can't view non-existent white board, please create it first by using ", keyNew)
 	default:
 		wb, err := ioutil.ReadFile(wbPath)
 		if err != nil {
