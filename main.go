@@ -25,8 +25,9 @@ func main() {
 		case "list":
 			//view the list
 			list()
+		case "delete":
+			fmt.Println("invalid argments, must specify name of the board to delete as additional argument")
 		case "new":
-			//error new is a reserved word
 			fmt.Println("invalid argments, must specify name of new board as additional argument")
 		default:
 			// open the wb board with the name of the argument
@@ -34,39 +35,41 @@ func main() {
 		}
 
 	case 2:
-		//edit or create a specified board
+		//edit/delete/create-new board
+		Bedit := false
+		Bdelete := false
+		Bnew := false
+		noRsrvArgs := 0
 
-		editArg := -1
-		newArg := -1
-		listArg := -1
 		boardArg := -1
 		for i := 0; i < len(args); i++ {
 			switch args[i] {
 			case "edit":
-				editArg = i
+				Bedit = true
+				noRsrvArgs++
+			case "delete":
+				Bdelete = true
+				noRsrvArgs++
 			case "new":
-				newArg = i
+				Bnew = true
+				noRsrvArgs++
 			case "list":
-				listArg = i
+				fmt.Println("invalid argments, list argument is reserved")
+				return
 			default:
 				boardArg = i
 			}
 		}
-
 		switch {
-		case listArg != -1:
-			fmt.Println("invalid argments, list argument is reserved")
+		case noRsrvArgs != 1:
+			fmt.Println("invalid use of reserved arguments, must enter *one* of either 'new', 'edit', or 'delete'")
 			return
-		case editArg == -1 && newArg != -1:
+		case Bnew:
 			new(args[boardArg])
-		case editArg != -1 && newArg == -1:
+		case Bedit:
 			edit(args[boardArg])
-		case editArg != -1 && newArg != -1:
-			fmt.Println("invalid argments, specified to 'edit' and create 'new'")
-			return
-		case editArg == -1 && newArg == -1:
-			fmt.Println("invalid argments, 2 arguments without an 'edit' or 'new' arg")
-			return
+		case Bdelete:
+			delete(args[boardArg])
 		}
 	default:
 		fmt.Println("invalid number of args")
@@ -103,6 +106,7 @@ func list() {
 	boardPath, err := getWbPath("")
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	filepath.Walk(boardPath, visit)
@@ -117,10 +121,32 @@ func visit(path string, f os.FileInfo, err error) error {
 	return nil
 }
 
+func delete(wbName string) {
+	wbPath, err := getWbPath(wbName)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	if !wbExists(wbPath) { //does the whiteboard not exist
+		fmt.Println("error can't delete non-existent whiteboard")
+		return
+	}
+
+	err = os.Remove(wbPath)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	fmt.Println("roger, deleted successfully")
+}
+
 func new(wbName string) {
 	wbPath, err := getWbPath(wbName)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	if wbExists(wbPath) { //does the whiteboard already exist
@@ -140,6 +166,7 @@ func edit(wbName string) {
 	wbPath, err := getWbPath(wbName)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	if !wbExists(wbPath) {
@@ -160,6 +187,7 @@ func view(wbName string) {
 	wbPath, err := getWbPath(wbName)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	switch {
