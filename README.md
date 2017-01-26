@@ -18,24 +18,26 @@ The intention behind this program is to provide a space for quickly retrieving a
 
 ###  Example Usage
 
-The following are a list of commands that can be run in terminal. 
-wb can be run while   
+The following are a list of commands that can be run in terminal. wb can be run while navigated to any directory. 
 
-| Command     | Description                                     |
-|-------------|-------------------------------------------------|
-| wb          | Opens the default wb                            |
-| wb edit     | Edit the default wb                             |
-| wb list     | List all custom boards                          |
-| wb foo      | View or create a new custom wb named 'foo'      |
-| wb edit foo | Edit or create and edit a custom wb named 'foo' |
-| wb foo edit | Same action as above                            |
+| Command       | Alt. Cmd.     | Description                               |
+|---------------|---------------|-------------------------------------------|
+| wb            |               | Opens the default whiteboard              |
+| wb edit       |               | Edit the default whiteboard               |
+| wb foo        |               | View an existing whiteboard named 'foo'   |
+| wb new foo    | wb foo new    | Create new wb named 'foo'                 |
+| wb edit foo   | wb foo edit   | Edit an existing whiteboard named 'foo'   |
+| wb delete foo | wb foo delete | Delete an existing whiteboard named 'foo' |
+| wb list       |               | List all whiteboards                      |
 
 ### Other Notes
 
  - Raw text files are stored under the repo root folder
  - The following are reserved words which can not be used for custom boards:
-   - list
+   - new
    - edit
+   - delete
+   - list
 
 ### Contributing
 
