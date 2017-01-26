@@ -24,30 +24,45 @@ func main() {
 		case "list":
 			//view the list
 			view("list")
+		case "new":
+			//error new is a reserved word
+			fmt.Println("invalid argments, must specify name of new board as additional argument")
 		default:
 			// open the wb board with the name of the argument
 			view(args[0])
 		}
 
 	case 2:
-		//edit a specified board
+		//edit or create a specified board
 
 		//get edit position
 		editArg := -1
+		newArg := -1
 		boardArg := -1
 		for i := 0; i < len(args); i++ {
-			if args[i] == "edit" {
+			switch args[i] {
+			case "edit":
 				editArg = i
-			} else {
+			case "new":
+				newArg = i
+			default:
 				boardArg = i
 			}
 		}
-		if editArg == -1 {
-			fmt.Println("invalid argments, 2 arguments without an 'edit' arg")
+
+		switch {
+		case editArg == -1 && newArg != -1:
+			new(args[boardArg])
+		case editArg != -1 && newArg == -1:
+			edit(args[boardArg])
+		case editArg != -1 && newArg != -1:
+			fmt.Println("invalid argments, specified to 'edit' and create 'new'")
+			return
+		case editArg == -1 && newArg == -1:
+			fmt.Println("invalid argments, 2 arguments without an 'edit' or 'new' arg")
 			return
 		}
 
-		edit(args[boardArg])
 	default:
 		fmt.Println("invalid number of args")
 		return
@@ -76,15 +91,35 @@ func addNameToList(wbName string) {
 	//TODO: complete funtionality
 }
 
-func edit(wbName string) {
+func new(wbName string) {
+	wbPath, err := getWbPath(wbName)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
+	if wbExists(wbPath) { //does the whiteboard already exist
+		fmt.Println("error whiteboard already exists")
+		return
+	}
+
+	addNameToList(wbName)
+	err = ioutil.WriteFile(wbPath, []byte(""), 0644)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("Squeaky clean whiteboard created for", wbName)
+}
+
+func edit(wbName string) {
 	wbPath, err := getWbPath(wbName)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	if !wbExists(wbPath) {
-		addNameToList(wbName)
+		fmt.Println("error can't edit non-existent white board, please create it first by using 'new'")
+		return
 	}
 
 	cmd2 := exec.Command("vim", wbPath)
@@ -103,13 +138,7 @@ func view(wbName string) {
 	}
 
 	if !wbExists(wbPath) { //does the whiteboard file not yet exist?
-		addNameToList(wbName)
-		err = ioutil.WriteFile(wbPath, []byte(""), 0644)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		fmt.Println("Squeaky clean whiteboard created for", wbName)
+		fmt.Println("error can't view non-existent white board, please create it first by using 'new'")
 	} else {
 		wb, err := ioutil.ReadFile(wbPath)
 		if err != nil {
