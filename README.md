@@ -20,23 +20,23 @@ The intention behind this program is to provide a space for quickly retrieving a
 
 The following are a list of commands that can be run in terminal. wb can be run while navigated to any directory. 
 
-| Command       | Alt. Cmd.     | Description                               |
-|---------------|---------------|-------------------------------------------|
-| wb            |               | Opens the default whiteboard              |
-| wb edit       |               | Edit the default whiteboard               |
-| wb foo        |               | View an existing whiteboard named 'foo'   |
-| wb new foo    | wb foo new    | Create new wb named 'foo'                 |
-| wb edit foo   | wb foo edit   | Edit an existing whiteboard named 'foo'   |
-| wb delete foo | wb foo delete | Delete an existing whiteboard named 'foo' |
-| wb list       |               | List all whiteboards                      |
+| Command   | Alt. Cmd. | Description                               |
+|-----------|-----------|-------------------------------------------|
+| wb        |           | Opens the default whiteboard              |
+| wb ed     |           | Edit the default whiteboard               |
+| wb foo    |           | View an existing whiteboard named 'foo'   |
+| wb nu foo | wb foo nu | Create new wb named 'foo'                 |
+| wb ed foo | wb foo ed | Edit an existing whiteboard named 'foo'   |
+| wb rm foo | wb foo rm | Remove an existing whiteboard named 'foo' |
+| wb list   |           | List all whiteboards                      |
 
 ### Other Notes
 
  - Raw text files are stored under the repo root folder
  - The following are reserved words which can not be used for custom boards:
-   - new
-   - edit
-   - delete
+   - nu
+   - ed
+   - rm
    - list
 
 ### Contributing

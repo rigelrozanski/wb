@@ -10,24 +10,34 @@ import (
 	"strings"
 )
 
+//keywords used throughout wb
+var (
+	keyNew    string = "nu"
+	keyEdit   string = "ed"
+	keyRemove string = "rm"
+	keyList   string = "list"
+
+	defaultWB string = "wb"
+)
+
 func main() {
 	args := os.Args[1:]
 
 	switch len(args) {
 	case 0:
 		// open the main wb
-		view("wb")
+		view(defaultWB)
 	case 1:
 		switch args[0] {
-		case "edit":
+		case keyEdit:
 			//edit the main wb
-			edit("wb")
-		case "list":
+			edit(defaultWB)
+		case keyList:
 			//view the list
 			list()
-		case "delete":
+		case keyRemove:
 			fmt.Println("invalid argments, must specify name of the board to delete as additional argument")
-		case "new":
+		case keyNew:
 			fmt.Println("invalid argments, must specify name of new board as additional argument")
 		default:
 			// open the wb board with the name of the argument
@@ -44,16 +54,16 @@ func main() {
 		boardArg := -1
 		for i := 0; i < len(args); i++ {
 			switch args[i] {
-			case "edit":
+			case keyEdit:
 				Bedit = true
 				noRsrvArgs++
-			case "delete":
+			case keyRemove:
 				Bdelete = true
 				noRsrvArgs++
-			case "new":
+			case keyNew:
 				Bnew = true
 				noRsrvArgs++
-			case "list":
+			case keyList:
 				fmt.Println("invalid argments, list argument is reserved")
 				return
 			default:
@@ -69,7 +79,7 @@ func main() {
 		case Bedit:
 			edit(args[boardArg])
 		case Bdelete:
-			delete(args[boardArg])
+			remove(args[boardArg])
 		}
 	default:
 		fmt.Println("invalid number of args")
@@ -121,7 +131,7 @@ func visit(path string, f os.FileInfo, err error) error {
 	return nil
 }
 
-func delete(wbName string) {
+func remove(wbName string) {
 	wbPath, err := getWbPath(wbName)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -191,9 +201,9 @@ func view(wbName string) {
 	}
 
 	switch {
-	case !wbExists(wbPath) && wbName == "wb":
-		new("wb") //automatically create the default wb if it doesn't exist
-	case !wbExists(wbPath) && wbName != "wb":
+	case !wbExists(wbPath) && wbName == defaultWB:
+		new(defaultWB) //automatically create the default wb if it doesn't exist
+	case !wbExists(wbPath) && wbName != defaultWB:
 		fmt.Println("error can't view non-existent white board, please create it first by using 'new'")
 	default:
 		wb, err := ioutil.ReadFile(wbPath)
