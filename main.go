@@ -5,8 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
+	pathL "path"
 	"path/filepath"
+	"strings"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 			edit("wb")
 		case "list":
 			//view the list
-			view("list")
+			list()
 		case "new":
 			//error new is a reserved word
 			fmt.Println("invalid argments, must specify name of new board as additional argument")
@@ -35,9 +36,9 @@ func main() {
 	case 2:
 		//edit or create a specified board
 
-		//get edit position
 		editArg := -1
 		newArg := -1
+		listArg := -1
 		boardArg := -1
 		for i := 0; i < len(args); i++ {
 			switch args[i] {
@@ -45,12 +46,17 @@ func main() {
 				editArg = i
 			case "new":
 				newArg = i
+			case "list":
+				listArg = i
 			default:
 				boardArg = i
 			}
 		}
 
 		switch {
+		case listArg != -1:
+			fmt.Println("invalid argments, list argument is reserved")
+			return
 		case editArg == -1 && newArg != -1:
 			new(args[boardArg])
 		case editArg != -1 && newArg == -1:
@@ -62,7 +68,6 @@ func main() {
 			fmt.Println("invalid argments, 2 arguments without an 'edit' or 'new' arg")
 			return
 		}
-
 	default:
 		fmt.Println("invalid number of args")
 		return
@@ -77,9 +82,15 @@ func getWbPath(wbName string) (string, error) {
 
 	goPath, _ := os.LookupEnv("GOPATH")
 
-	relPath, err := filepath.Rel(curPath, path.Join(goPath,
-		"/src/github.com/rigelrozanski/wb", wbName))
-	return relPath, err
+	relBoardsPath, err := filepath.Rel(curPath, pathL.Join(goPath,
+		"/src/github.com/rigelrozanski/wb/boards"))
+
+	//create the boards directory if it doesn't exist
+	os.Mkdir(relBoardsPath, os.ModePerm)
+
+	relWbPath := pathL.Join(relBoardsPath, wbName)
+
+	return relWbPath, err
 }
 
 func wbExists(wbPath string) bool {
@@ -87,8 +98,23 @@ func wbExists(wbPath string) bool {
 	return !os.IsNotExist(err)
 }
 
-func addNameToList(wbName string) {
-	//TODO: complete funtionality
+func list() {
+
+	boardPath, err := getWbPath("")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	filepath.Walk(boardPath, visit)
+}
+
+func visit(path string, f os.FileInfo, err error) error {
+
+	basePath := pathL.Base(path)
+	if len(basePath) > 0 && strings.Contains(path, "/") {
+		fmt.Println(basePath)
+	}
+	return nil
 }
 
 func new(wbName string) {
@@ -102,7 +128,6 @@ func new(wbName string) {
 		return
 	}
 
-	addNameToList(wbName)
 	err = ioutil.WriteFile(wbPath, []byte(""), 0644)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -137,9 +162,12 @@ func view(wbName string) {
 		fmt.Println(err.Error())
 	}
 
-	if !wbExists(wbPath) { //does the whiteboard file not yet exist?
+	switch {
+	case !wbExists(wbPath) && wbName == "wb":
+		new("wb") //automatically create the default wb if it doesn't exist
+	case !wbExists(wbPath) && wbName != "wb":
 		fmt.Println("error can't view non-existent white board, please create it first by using 'new'")
-	} else {
+	default:
 		wb, err := ioutil.ReadFile(wbPath)
 		if err != nil {
 			fmt.Println(err.Error())
