@@ -9,23 +9,33 @@ The intention behind this program is to provide a space for quickly retrieving a
 ### Installation
 
 1. Make sure you [have Go installed][1] and [put $GOPATH/bin in your $PATH][2]
-2. [Install Cobra][3]
-3. run `go get github.com/rigelrozanski/wb`
-4. run `go install wb`
+2. run `go get github.com/rigelrozanski/wb`
+3. run `go install wb`
 
 [1]: https://golang.org/doc/install
 [2]: https://github.com/tendermint/tendermint/wiki/Setting-GOPATH 
 [3]: https://github.com/spf13/cobra#installing
 
-###  Usage
+###  Example Usage
 
-once installed run the command `wb` from any terminal window to read a common text file to terminal
+The following are a list of commands that can be run in terminal. 
+wb can be run while   
 
-### Command List
-  
-`wb --help` 	diplays program details and command list  
-`wb` 		open the whiteboard	
-`wb edit` 	edit the whiteboard	
+| Command     | Description                                     |
+|-------------|-------------------------------------------------|
+| wb          | Opens the default wb                            |
+| wb edit     | Edit the default wb                             |
+| wb list     | List all custom boards                          |
+| wb foo      | View or create a new custom wb named 'foo'      |
+| wb edit foo | Edit or create and edit a custom wb named 'foo' |
+| wb foo edit | Same action as above                            |
+
+### Other Notes
+
+ - Raw text files are stored under the repo root folder
+ - The following are reserved words which can not be used for custom boards:
+   - list
+   - edit
 
 ### Contributing
 
