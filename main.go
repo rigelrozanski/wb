@@ -18,6 +18,7 @@ var (
 	keyList   string = "list"
 
 	defaultWB string = "wb"
+	boardsDir string = "boards"
 )
 
 func main() {
@@ -96,7 +97,7 @@ func getWbPath(wbName string) (string, error) {
 	goPath, _ := os.LookupEnv("GOPATH")
 
 	relBoardsPath, err := filepath.Rel(curPath, pathL.Join(goPath,
-		"/src/github.com/rigelrozanski/wb/boards"))
+		"/src/github.com/rigelrozanski/wb", boardsDir))
 
 	//create the boards directory if it doesn't exist
 	os.Mkdir(relBoardsPath, os.ModePerm)
@@ -125,7 +126,8 @@ func list() {
 func visit(path string, f os.FileInfo, err error) error {
 
 	basePath := pathL.Base(path)
-	if len(basePath) > 0 && strings.Contains(path, "/") {
+	basePath = strings.Replace(basePath, boardsDir, "", 1) //remove the boards dir
+	if len(basePath) > 0 {
 		fmt.Println(basePath)
 	}
 	return nil
