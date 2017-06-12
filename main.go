@@ -11,14 +11,16 @@ import (
 )
 
 //keywords used throughout wb
-var (
-	keyNew    string = "nu"
-	keyEdit   string = "ed"
-	keyRemove string = "rm"
-	keyList   string = "list"
+const (
+	keyNew     = "nu"
+	keyEdit    = "ed"
+	keyRemove  = "rm"
+	keyBackup  = "backup"
+	keyRestore = "restore"
+	keyList    = "list"
 
-	defaultWB string = "wb"
-	boardsDir string = "boards"
+	defaultWB = "wb"
+	boardsDir = "boards"
 )
 
 func main() {
@@ -30,11 +32,13 @@ func main() {
 		view(defaultWB)
 	case 1:
 		switch args[0] {
+		case keyBackup:
+			backup()
+		case keyRestore:
+			restore()
 		case keyEdit:
-			//edit the main wb
 			edit(defaultWB)
 		case keyList:
-			//view the list
 			list()
 		case keyRemove:
 			fmt.Println("invalid argments, must specify name of the board to delete as additional argument")
@@ -88,7 +92,29 @@ func main() {
 	}
 }
 
+//func getWbPath(wbName string) (string, error) {
+//curPath, err := filepath.Abs("")
+//if err != nil {
+//return "", err
+//}
+//goPath, _ := os.LookupEnv("GOPATH")
+//relBoardsPath, err := filepath.Rel(curPath, pathL.Join(goPath,
+//"/src/github.com/rigelrozanski/wb", boardsDir))
+////create the boards directory if it doesn't exist
+//os.Mkdir(relBoardsPath, os.ModePerm)
+//relWbPath := pathL.Join(relBoardsPath, wbName)
+//return relWbPath, err
+//}
+
 func getWbPath(wbName string) (string, error) {
+	return getRelPath(pathL.Join("/src/github.com/rigelrozanski/wb", boardsDir), wbName)
+}
+
+func getKeyPath() (string, error) {
+	return getRelPath("/src/github.com/rigelrozanski/wb", "key.json")
+}
+
+func getRelPath(absPath, file string) (string, error) {
 	curPath, err := filepath.Abs("")
 	if err != nil {
 		return "", err
@@ -97,12 +123,12 @@ func getWbPath(wbName string) (string, error) {
 	goPath, _ := os.LookupEnv("GOPATH")
 
 	relBoardsPath, err := filepath.Rel(curPath, pathL.Join(goPath,
-		"/src/github.com/rigelrozanski/wb", boardsDir))
+		absPath))
 
 	//create the boards directory if it doesn't exist
 	os.Mkdir(relBoardsPath, os.ModePerm)
 
-	relWbPath := pathL.Join(relBoardsPath, wbName)
+	relWbPath := pathL.Join(relBoardsPath, file)
 
 	return relWbPath, err
 }
@@ -116,7 +142,7 @@ func list() {
 
 	boardPath, err := getWbPath("")
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(err)
 		return
 	}
 
@@ -136,7 +162,7 @@ func visit(path string, f os.FileInfo, err error) error {
 func remove(wbName string) {
 	wbPath, err := getWbPath(wbName)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(err)
 		return
 	}
 
@@ -157,7 +183,7 @@ func remove(wbName string) {
 func new(wbName string) {
 	wbPath, err := getWbPath(wbName)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(err)
 		return
 	}
 
@@ -177,7 +203,7 @@ func new(wbName string) {
 func edit(wbName string) {
 	wbPath, err := getWbPath(wbName)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(err)
 		return
 	}
 
@@ -191,14 +217,14 @@ func edit(wbName string) {
 	cmd2.Stdout = os.Stdout
 	err = cmd2.Run()
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(err)
 	}
 }
 
 func view(wbName string) {
 	wbPath, err := getWbPath(wbName)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println(err)
 		return
 	}
 
@@ -210,7 +236,7 @@ func view(wbName string) {
 	default:
 		wb, err := ioutil.ReadFile(wbPath)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println(err)
 		}
 		fmt.Print(string(wb))
 	}

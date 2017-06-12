@@ -1,5 +1,8 @@
 #whiteboard file
-whiteboard
+boards/
+
+#key file
+key.json
 
 #vim files#
 *.swp
