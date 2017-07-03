@@ -18,6 +18,8 @@ const (
 	keyBackup  = "backup"
 	keyRestore = "restore"
 	keyList    = "list"
+	keyHelp1   = "--help"
+	keyHelp2   = "-h"
 
 	defaultWB = "wb"
 	boardsDir = "boards"
@@ -32,6 +34,8 @@ func main() {
 		view(defaultWB)
 	case 1:
 		switch args[0] {
+		case keyHelp1, keyHelp2:
+			printHelp()
 		case keyBackup:
 			backup()
 		case keyRestore:
@@ -92,19 +96,24 @@ func main() {
 	}
 }
 
-//func getWbPath(wbName string) (string, error) {
-//curPath, err := filepath.Abs("")
-//if err != nil {
-//return "", err
-//}
-//goPath, _ := os.LookupEnv("GOPATH")
-//relBoardsPath, err := filepath.Rel(curPath, pathL.Join(goPath,
-//"/src/github.com/rigelrozanski/wb", boardsDir))
-////create the boards directory if it doesn't exist
-//os.Mkdir(relBoardsPath, os.ModePerm)
-//relWbPath := pathL.Join(relBoardsPath, wbName)
-//return relWbPath, err
-//}
+func printHelp() {
+	fmt.Println(`
+/|||||\ |-o-o-~|
+
+Usage: 
+
+wb [boardname]      -> view the wb
+wb nu [boardname]   -> create a new wb
+wb ed [boardname]   -> edit a wb
+wb rm [boardname]   -> remove a wb
+wb backup           -> aws backup all wbs
+wb restore          -> aws restore all wbs
+wb list             -> list all the wbs
+
+note - if the [boardname] is not provided, 
+the default board named 'wb' will be used.
+`)
+}
 
 func getWbPath(wbName string) (string, error) {
 	return getRelPath(pathL.Join("/src/github.com/rigelrozanski/wb", boardsDir), wbName)
