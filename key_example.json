@@ -1,6 +1,6 @@
 {
-    "bucket":"",
-    "aws_id":"",
-    "aws_secret":""
+    "bucket":"yourbucketname",
+    "aws_id":"XXXXXXXXXXXXXXXXXXXX",
+    "aws_secret":"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     "aws_region":"ca-central-1"
 }
