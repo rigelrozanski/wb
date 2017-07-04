@@ -201,7 +201,14 @@ func new(wbName string) {
 		return
 	}
 
-	err = ioutil.WriteFile(wbPath, []byte(""), 0644)
+	//create the blank canvas to work from
+	blankLine := fmt.Sprintf("%140s\n", " ")
+	var blankStr string
+	for i := 1; i <= 48; i++ {
+		blankStr += blankLine
+	}
+
+	err = ioutil.WriteFile(wbPath, []byte(blankStr), 0644)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -221,7 +228,7 @@ func edit(wbName string) {
 		return
 	}
 
-	cmd2 := exec.Command("vim", wbPath)
+	cmd2 := exec.Command("vim", "-c", "startreplace | +normal 25G70|", wbPath)
 	cmd2.Stdin = os.Stdin
 	cmd2.Stdout = os.Stdout
 	err = cmd2.Run()
