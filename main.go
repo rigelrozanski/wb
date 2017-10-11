@@ -13,7 +13,8 @@ import (
 //keywords used throughout wb
 const (
 	keyNew     = "nu"
-	keyEdit    = "ed"
+	keyNew2    = "nu2"
+	keyView    = "cat"
 	keyRemove  = "rm"
 	keyBackup  = "backup"
 	keyRestore = "restore"
@@ -31,7 +32,7 @@ func main() {
 	switch len(args) {
 	case 0:
 		// open the main wb
-		view(defaultWB)
+		edit(defaultWB)
 	case 1:
 		switch args[0] {
 		case keyHelp1, keyHelp2:
@@ -40,37 +41,39 @@ func main() {
 			backup()
 		case keyRestore:
 			restore()
-		case keyEdit:
-			edit(defaultWB)
+		case keyView:
+			view(defaultWB)
 		case keyList:
 			list()
-		case keyRemove:
-			fmt.Println("invalid argments, must specify name of the board to delete as additional argument")
-		case keyNew:
-			fmt.Println("invalid argments, must specify name of new board as additional argument")
+		case keyNew, keyNew2, keyRemove:
+			fmt.Println("invalid argments, must specify name of board")
 		default:
 			// open the wb board with the name of the argument
-			view(args[0])
+			edit(args[0])
 		}
 
 	case 2:
 		//edit/delete/create-new board
-		Bedit := false
+		Bview := false
 		Bdelete := false
 		Bnew := false
+		Bnew2 := false
 		noRsrvArgs := 0
 
 		boardArg := -1
 		for i := 0; i < len(args); i++ {
 			switch args[i] {
-			case keyEdit:
-				Bedit = true
+			case keyView:
+				Bview = true
 				noRsrvArgs++
 			case keyRemove:
 				Bdelete = true
 				noRsrvArgs++
 			case keyNew:
 				Bnew = true
+				noRsrvArgs++
+			case keyNew2:
+				Bnew2 = true
 				noRsrvArgs++
 			case keyList:
 				fmt.Println("invalid argments, list argument is reserved")
@@ -81,12 +84,15 @@ func main() {
 		}
 		switch {
 		case noRsrvArgs != 1:
-			fmt.Printf("invalid use of reserved arguments, must enter *one* of either %v, %v, or %v\n", keyNew, keyEdit, keyRemove)
+			fmt.Printf("invalid use of reserved arguments, must enter *one*"+
+				" of either %v, %v, or %v\n", keyNew, keyView, keyRemove)
 			return
 		case Bnew:
-			new(args[boardArg])
-		case Bedit:
-			edit(args[boardArg])
+			freshWB(args[boardArg])
+		case Bnew2:
+			freshWBFilled(args[boardArg])
+		case Bview:
+			view(args[boardArg])
 		case Bdelete:
 			remove(args[boardArg])
 		}
@@ -102,13 +108,14 @@ func printHelp() {
 
 Usage: 
 
-wb [boardname]      -> view the wb
-wb nu [boardname]   -> create a new wb
-wb ed [boardname]   -> edit a wb
-wb rm [boardname]   -> remove a wb
-wb backup           -> aws backup all wbs
-wb restore          -> aws restore all wbs
-wb list             -> list all the wbs
+wb [boardname]       -> edit the wb
+wb nu [boardname]    -> create a new wb
+wb nu2 [boardname]   -> create a new filled wb
+wb cat [boardname]   -> view a wb
+wb rm [boardname]    -> remove a wb
+wb backup            -> aws backup all wbs
+wb restore           -> aws restore all wbs
+wb list              -> list all the wbs
 
 note - if the [boardname] is not provided, 
 the default board named 'wb' will be used.
@@ -189,7 +196,7 @@ func remove(wbName string) {
 	fmt.Println("roger, deleted successfully")
 }
 
-func new(wbName string) {
+func freshWBFilled(wbName string) {
 	wbPath, err := getWbPath(wbName)
 	if err != nil {
 		fmt.Println(err)
@@ -214,6 +221,33 @@ func new(wbName string) {
 		return
 	}
 	fmt.Println("Squeaky clean whiteboard created for", wbName)
+
+	//now edit the wb
+	edit(wbName)
+}
+
+func freshWB(wbName string) {
+	wbPath, err := getWbPath(wbName)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	if wbExists(wbPath) { //does the whiteboard already exist
+		fmt.Println("error whiteboard already exists")
+		return
+	}
+
+	//create the blank canvas to work from
+	err = ioutil.WriteFile(wbPath, []byte(""), 0644)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("Squeaky clean whiteboard created for", wbName)
+
+	//now edit the wb
+	edit(wbName)
 }
 
 func edit(wbName string) {
@@ -228,7 +262,8 @@ func edit(wbName string) {
 		return
 	}
 
-	cmd2 := exec.Command("vim", "-c", "startreplace | +normal 25G70|", wbPath)
+	//cmd2 := exec.Command("vim", "-c", "startreplace | +normal 25G70|", wbPath) //start with replace
+	cmd2 := exec.Command("vim", "-c", "+normal 1G1|", wbPath) //start in the upper left corner nomatter
 	cmd2.Stdin = os.Stdin
 	cmd2.Stdout = os.Stdout
 	err = cmd2.Run()
@@ -246,7 +281,7 @@ func view(wbName string) {
 
 	switch {
 	case !wbExists(wbPath) && wbName == defaultWB:
-		new(defaultWB) //automatically create the default wb if it doesn't exist
+		freshWB(defaultWB) //automatically create the default wb if it doesn't exist
 	case !wbExists(wbPath) && wbName != defaultWB:
 		fmt.Println("error can't view non-existent white board, please create it first by using ", keyNew)
 	default:
