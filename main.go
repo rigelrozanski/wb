@@ -8,19 +8,21 @@ import (
 	pathL "path"
 	"path/filepath"
 	"strings"
+
+	cmn "github.com/rigelrozanski/common"
 )
 
 //keywords used throughout wb
 const (
-	keyNew     = "nu"
-	keyNew2    = "nu2"
-	keyView    = "cat"
-	keyRemove  = "rm"
-	keyBackup  = "backup"
-	keyRestore = "restore"
-	keyList    = "list"
-	keyHelp1   = "--help"
-	keyHelp2   = "-h"
+	keyNew       = "nu"
+	keyView      = "cat"
+	keyRemove    = "rm"
+	keyDuplicate = "cp"
+	keyBackup    = "backup"
+	keyRestore   = "restore"
+	keyList      = "ls"
+	keyHelp1     = "--help"
+	keyHelp2     = "-h"
 
 	defaultWB = "wb"
 	boardsDir = "boards"
@@ -45,19 +47,16 @@ func main() {
 			view(defaultWB)
 		case keyList:
 			list()
-		case keyNew, keyNew2, keyRemove:
+		case keyNew, keyRemove:
 			fmt.Println("invalid argments, must specify name of board")
 		default:
 			// open the wb board with the name of the argument
 			edit(args[0])
 		}
-
+		return
 	case 2:
 		//edit/delete/create-new board
-		Bview := false
-		Bdelete := false
-		Bnew := false
-		Bnew2 := false
+		Bview, Bdelete, Bnew := false, false, false
 		noRsrvArgs := 0
 
 		boardArg := -1
@@ -72,34 +71,37 @@ func main() {
 			case keyNew:
 				Bnew = true
 				noRsrvArgs++
-			case keyNew2:
-				Bnew2 = true
-				noRsrvArgs++
 			case keyList:
-				fmt.Println("invalid argments, list argument is reserved")
-				return
+				break
 			default:
 				boardArg = i
 			}
 		}
+
 		switch {
 		case noRsrvArgs != 1:
-			fmt.Printf("invalid use of reserved arguments, must enter *one*"+
-				" of either %v, %v, or %v\n", keyNew, keyView, keyRemove)
-			return
+			break
 		case Bnew:
 			freshWB(args[boardArg])
-		case Bnew2:
-			freshWBFilled(args[boardArg])
+			return
 		case Bview:
 			view(args[boardArg])
+			return
 		case Bdelete:
 			remove(args[boardArg])
+			return
+		default:
+			break
 		}
-	default:
-		fmt.Println("invalid number of args")
+	case 3:
+		if args[0] != keyDuplicate {
+			break
+		}
+		duplicate(args[1], args[2])
 		return
 	}
+	fmt.Println("invalid number of args")
+	return
 }
 
 func printHelp() {
@@ -108,14 +110,15 @@ func printHelp() {
 
 Usage: 
 
-wb [boardname]       -> edit the wb
-wb nu [boardname]    -> create a new wb
-wb nu2 [boardname]   -> create a new filled wb
-wb cat [boardname]   -> view a wb
-wb rm [boardname]    -> remove a wb
+wb [name]            -> edit the wb
+wb nu [name]         -> create a new wb
+wb cp [copy] [name]  -> duplicate a wb
+wb cat [name]        -> view a wb
+wb rm [name]         -> remove a wb
+wb ls                -> list all the wbs
+
 wb backup            -> aws backup all wbs
 wb restore           -> aws restore all wbs
-wb list              -> list all the wbs
 
 note - if the [boardname] is not provided, 
 the default board named 'wb' will be used.
@@ -196,36 +199,6 @@ func remove(wbName string) {
 	fmt.Println("roger, deleted successfully")
 }
 
-func freshWBFilled(wbName string) {
-	wbPath, err := getWbPath(wbName)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	if wbExists(wbPath) { //does the whiteboard already exist
-		fmt.Println("error whiteboard already exists")
-		return
-	}
-
-	//create the blank canvas to work from
-	blankLine := fmt.Sprintf("%140s\n", " ")
-	var blankStr string
-	for i := 1; i <= 48; i++ {
-		blankStr += blankLine
-	}
-
-	err = ioutil.WriteFile(wbPath, []byte(blankStr), 0644)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	fmt.Println("Squeaky clean whiteboard created for", wbName)
-
-	//now edit the wb
-	edit(wbName)
-}
-
 func freshWB(wbName string) {
 	wbPath, err := getWbPath(wbName)
 	if err != nil {
@@ -270,6 +243,35 @@ func edit(wbName string) {
 	if err != nil {
 		fmt.Println(err)
 	}
+}
+
+func duplicate(copyWB, newWB string) {
+	copyPath, err := getWbPath(copyWB)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if !wbExists(copyPath) {
+		fmt.Printf("error can't copy non-existent white board, please create it first by using %v\n", keyNew)
+		return
+	}
+
+	newPath, err := getWbPath(newWB)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if wbExists(newPath) {
+		fmt.Println("error i will not overwrite an existing wb!")
+		return
+	}
+
+	err = cmn.Copy(copyPath, newPath)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("succesfully copied from %v to %v\n", copyWB, newWB)
 }
 
 func view(wbName string) {
