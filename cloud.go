@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/rigelrozanski/wb/lib"
 )
 
 func restore() {
@@ -31,7 +32,7 @@ func restore() {
 	for _, o := range resp.Contents {
 
 		name := *o.Key
-		boardPath, err := getWbPath(name)
+		boardPath, err := lib.GetWbPath(name)
 		if err != nil {
 			exitErrorf("Unable to get path %q, %v", err)
 		}
@@ -62,7 +63,7 @@ func restore() {
 
 func loadOpenSess() (bucket string, sess *session.Session) {
 	//unmarshal the settings
-	keypath, err := getKeyPath()
+	keypath, err := lib.GetKeyPath()
 	if err != nil {
 		panic(err)
 	}
@@ -130,7 +131,7 @@ func backup() {
 	// http://docs.aws.amazon.com/sdk-for-go/api/service/s3/s3manager/#NewUploader
 	uploader := s3manager.NewUploader(sess)
 
-	boardPath, err := getWbPath("")
+	boardPath, err := lib.GetWbPath("")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -146,7 +147,7 @@ func backup() {
 
 		// Create the key name for the bucket
 		basePath := path.Base(filepath)
-		name := strings.Replace(basePath, boardsDir, "", 1) //remove the boards dir
+		name := strings.Replace(basePath, lib.BoardsDir, "", 1) //remove the boards dir
 		if len(name) > 0 {
 			// Upload to bucket with the key being the same as the filename.
 			_, err = uploader.Upload(&s3manager.UploadInput{

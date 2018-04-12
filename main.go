@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	cmn "github.com/rigelrozanski/common"
+	"github.com/rigelrozanski/wb/lib"
 )
 
 //keywords used throughout wb
@@ -25,7 +26,6 @@ const (
 	keyHelp2     = "-h"
 
 	defaultWB = "wb"
-	boardsDir = "boards"
 )
 
 func main() {
@@ -125,41 +125,9 @@ the default board named 'wb' will be used.
 `)
 }
 
-func getWbPath(wbName string) (string, error) {
-	return getRelPath(pathL.Join("/src/github.com/rigelrozanski/wb", boardsDir), wbName)
-}
-
-func getKeyPath() (string, error) {
-	return getRelPath("/src/github.com/rigelrozanski/wb", "key.json")
-}
-
-func getRelPath(absPath, file string) (string, error) {
-	curPath, err := filepath.Abs("")
-	if err != nil {
-		return "", err
-	}
-
-	goPath, _ := os.LookupEnv("GOPATH")
-
-	relBoardsPath, err := filepath.Rel(curPath, pathL.Join(goPath,
-		absPath))
-
-	//create the boards directory if it doesn't exist
-	os.Mkdir(relBoardsPath, os.ModePerm)
-
-	relWbPath := pathL.Join(relBoardsPath, file)
-
-	return relWbPath, err
-}
-
-func wbExists(wbPath string) bool {
-	_, err := os.Stat(wbPath)
-	return !os.IsNotExist(err)
-}
-
 func list() {
 
-	boardPath, err := getWbPath("")
+	boardPath, err := lib.GetWbPath("")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -171,7 +139,7 @@ func list() {
 func visit(path string, f os.FileInfo, err error) error {
 
 	basePath := pathL.Base(path)
-	basePath = strings.Replace(basePath, boardsDir, "", 1) //remove the boards dir
+	basePath = strings.Replace(basePath, lib.BoardsDir, "", 1) //remove the boards dir
 	if len(basePath) > 0 {
 		fmt.Println(basePath)
 	}
@@ -179,13 +147,13 @@ func visit(path string, f os.FileInfo, err error) error {
 }
 
 func remove(wbName string) {
-	wbPath, err := getWbPath(wbName)
+	wbPath, err := lib.GetWbPath(wbName)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	if !wbExists(wbPath) { //does the whiteboard not exist
+	if !lib.WbExists(wbPath) { //does the whiteboard not exist
 		fmt.Println("error can't delete non-existent whiteboard")
 		return
 	}
@@ -200,13 +168,13 @@ func remove(wbName string) {
 }
 
 func freshWB(wbName string) {
-	wbPath, err := getWbPath(wbName)
+	wbPath, err := lib.GetWbPath(wbName)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	if wbExists(wbPath) { //does the whiteboard already exist
+	if lib.WbExists(wbPath) { //does the whiteboard already exist
 		fmt.Println("error whiteboard already exists")
 		return
 	}
@@ -224,13 +192,13 @@ func freshWB(wbName string) {
 }
 
 func edit(wbName string) {
-	wbPath, err := getWbPath(wbName)
+	wbPath, err := lib.GetWbPath(wbName)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	if !wbExists(wbPath) {
+	if !lib.WbExists(wbPath) {
 		fmt.Println("error can't edit non-existent white board, please create it first by using ", keyNew)
 		return
 	}
@@ -246,22 +214,22 @@ func edit(wbName string) {
 }
 
 func duplicate(copyWB, newWB string) {
-	copyPath, err := getWbPath(copyWB)
+	copyPath, err := lib.GetWbPath(copyWB)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	if !wbExists(copyPath) {
+	if !lib.WbExists(copyPath) {
 		fmt.Printf("error can't copy non-existent white board, please create it first by using %v\n", keyNew)
 		return
 	}
 
-	newPath, err := getWbPath(newWB)
+	newPath, err := lib.GetWbPath(newWB)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	if wbExists(newPath) {
+	if lib.WbExists(newPath) {
 		fmt.Println("error i will not overwrite an existing wb!")
 		return
 	}
@@ -275,16 +243,16 @@ func duplicate(copyWB, newWB string) {
 }
 
 func view(wbName string) {
-	wbPath, err := getWbPath(wbName)
+	wbPath, err := lib.GetWbPath(wbName)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	switch {
-	case !wbExists(wbPath) && wbName == defaultWB:
+	case !lib.WbExists(wbPath) && wbName == defaultWB:
 		freshWB(defaultWB) //automatically create the default wb if it doesn't exist
-	case !wbExists(wbPath) && wbName != defaultWB:
+	case !lib.WbExists(wbPath) && wbName != defaultWB:
 		fmt.Println("error can't view non-existent white board, please create it first by using ", keyNew)
 	default:
 		wb, err := ioutil.ReadFile(wbPath)
