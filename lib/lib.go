@@ -1,11 +1,10 @@
 package lib
 
 import (
-	"os"
+	"fmt"
 	pathL "path"
-	"path/filepath"
 
-	"github.com/rigelrozanski/common"
+	cmn "github.com/rigelrozanski/common"
 )
 
 // directory name where boards are stored in repo
@@ -18,11 +17,11 @@ func GetWB(name string) []string {
 	if err != nil {
 		panic(err)
 	}
-	if !WbExists(path) {
+	if !cmn.FileExists(path) {
 		panic("wb no exist")
 	}
 
-	lines, err := common.ReadLines(path)
+	lines, err := cmn.ReadLines(path)
 	if err != nil {
 		panic(err)
 	}
@@ -32,36 +31,22 @@ func GetWB(name string) []string {
 
 // get the full path of a wb
 func GetWbPath(wbName string) (string, error) {
-	return GetRelPath(pathL.Join("/src/github.com/rigelrozanski/wb", BoardsDir), wbName)
-}
-
-// get the path for the key file
-func GetKeyPath() (string, error) {
-	return GetRelPath("/src/github.com/rigelrozanski/wb", "key.json")
-}
-
-// get the relative path to current loco
-func GetRelPath(absPath, file string) (string, error) {
-	curPath, err := filepath.Abs("")
+	wbBackupRepoPath, err := GetWbBackupRepoPath()
 	if err != nil {
 		return "", err
 	}
-
-	goPath, _ := os.LookupEnv("GOPATH")
-
-	relBoardsPath, err := filepath.Rel(curPath, pathL.Join(goPath,
-		absPath))
-
-	//create the boards directory if it doesn't exist
-	os.Mkdir(relBoardsPath, os.ModePerm)
-
-	relWbPath := pathL.Join(relBoardsPath, file)
-
-	return relWbPath, err
+	return pathL.Join(wbBackupRepoPath, BoardsDir, wbName), nil
 }
 
-// does the wb at this path exist
-func WbExists(wbPath string) bool {
-	_, err := os.Stat(wbPath)
-	return !os.IsNotExist(err)
+// get the full path of a wb backup repo
+func GetWbBackupRepoPath() (string, error) {
+	configPath, err := cmn.GetRelPath("/src/github.com/rigelrozanski/wb", "config.txt")
+	if err != nil {
+		return "", fmt.Errorf("missing config.txt file in root of repo, error: %v", err)
+	}
+	lines, err := cmn.ReadLines(configPath)
+	if err != nil {
+		return "", fmt.Errorf("error reading config, error: %v", err)
+	}
+	return lines[0], nil
 }

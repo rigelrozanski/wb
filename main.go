@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	cmn "github.com/rigelrozanski/common"
 	"github.com/rigelrozanski/wb/lib"
+
+	cmn "github.com/rigelrozanski/common"
 )
 
 //keywords used throughout wb
@@ -19,8 +20,7 @@ const (
 	keyView      = "cat"
 	keyRemove    = "rm"
 	keyDuplicate = "cp"
-	keyBackup    = "backup"
-	keyRestore   = "restore"
+	keyPush      = "push"
 	keyList      = "ls"
 	keyHelp1     = "--help"
 	keyHelp2     = "-h"
@@ -39,10 +39,8 @@ func main() {
 		switch args[0] {
 		case keyHelp1, keyHelp2:
 			printHelp()
-		case keyBackup:
-			backup()
-		case keyRestore:
-			restore()
+		case keyPush:
+			push("")
 		case keyView:
 			view(defaultWB)
 		case keyList:
@@ -55,6 +53,11 @@ func main() {
 		}
 		return
 	case 2:
+		if args[0] == keyPush {
+			push(args[1])
+			return
+		}
+
 		//edit/delete/create-new board
 		Bview, Bdelete, Bnew := false, false, false
 		noRsrvArgs := 0
@@ -118,7 +121,7 @@ wb rm [name]         -> remove a wb
 wb ls                -> list all the wbs
 
 wb backup            -> aws backup all wbs
-wb restore           -> aws restore all wbs
+wb push [msg]        -> aws push all wbs
 
 note - if the [boardname] is not provided, 
 the default board named 'wb' will be used.
@@ -153,7 +156,7 @@ func remove(wbName string) {
 		return
 	}
 
-	if !lib.WbExists(wbPath) { //does the whiteboard not exist
+	if !cmn.FileExists(wbPath) { //does the whiteboard not exist
 		fmt.Println("error can't delete non-existent whiteboard")
 		return
 	}
@@ -174,7 +177,7 @@ func freshWB(wbName string) {
 		return
 	}
 
-	if lib.WbExists(wbPath) { //does the whiteboard already exist
+	if cmn.FileExists(wbPath) { //does the whiteboard already exist
 		fmt.Println("error whiteboard already exists")
 		return
 	}
@@ -198,7 +201,7 @@ func edit(wbName string) {
 		return
 	}
 
-	if !lib.WbExists(wbPath) {
+	if !cmn.FileExists(wbPath) {
 		fmt.Println("error can't edit non-existent white board, please create it first by using ", keyNew)
 		return
 	}
@@ -219,7 +222,7 @@ func duplicate(copyWB, newWB string) {
 		fmt.Println(err)
 		return
 	}
-	if !lib.WbExists(copyPath) {
+	if !cmn.FileExists(copyPath) {
 		fmt.Printf("error can't copy non-existent white board, please create it first by using %v\n", keyNew)
 		return
 	}
@@ -229,7 +232,7 @@ func duplicate(copyWB, newWB string) {
 		fmt.Println(err)
 		return
 	}
-	if lib.WbExists(newPath) {
+	if cmn.FileExists(newPath) {
 		fmt.Println("error i will not overwrite an existing wb!")
 		return
 	}
@@ -250,9 +253,9 @@ func view(wbName string) {
 	}
 
 	switch {
-	case !lib.WbExists(wbPath) && wbName == defaultWB:
+	case !cmn.FileExists(wbPath) && wbName == defaultWB:
 		freshWB(defaultWB) //automatically create the default wb if it doesn't exist
-	case !lib.WbExists(wbPath) && wbName != defaultWB:
+	case !cmn.FileExists(wbPath) && wbName != defaultWB:
 		fmt.Println("error can't view non-existent white board, please create it first by using ", keyNew)
 	default:
 		wb, err := ioutil.ReadFile(wbPath)
@@ -261,4 +264,29 @@ func view(wbName string) {
 		}
 		fmt.Print(string(wb))
 	}
+}
+
+func push(commitMsg string) {
+	if commitMsg == "" {
+		commitMsg = "wb commit"
+	}
+	wbBackupDir, err := lib.GetWbBackupRepoPath()
+	if err != nil {
+		panic(err)
+	}
+	shPath, err := cmn.GetRelPath("/src/github.com/rigelrozanski/wb", "push.sh")
+	if err != nil {
+		panic(err)
+	}
+	cmn.WriteLines([]string{`#!/bin/bash
+git -C "` + wbBackupDir + `" add -A
+git -C "` + wbBackupDir + `" commit -m "` + commitMsg + `"
+git -C "` + wbBackupDir + `" push
+		`}, shPath)
+	cmd := exec.Command("/bin/bash", shPath)
+	_, err = cmd.Output()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("backup git push complete!")
 }

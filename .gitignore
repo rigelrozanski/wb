@@ -1,8 +1,7 @@
 #whiteboard file
+config.txt
 boards/
-
-#key file
-key.json
+push.sh
 
 #vim files#
 *.swp
