@@ -16,16 +16,34 @@ import (
 
 //keywords used throughout wb
 const (
-	keyNew       = "nu"
-	keyView      = "cat"
-	keyRemove    = "rm"
-	keyDuplicate = "cp"
-	keyPush      = "push"
-	keyList      = "ls"
-	keyHelp1     = "--help"
-	keyHelp2     = "-h"
+	keyNew    = "nu"
+	keyCopy   = "cp"
+	keyView   = "cat"
+	keyRemove = "rm"
+	keyList   = "ls"
+	keyPush   = "push"
+
+	keyHelp1 = "--help"
+	keyHelp2 = "-h"
 
 	defaultWB = "wb"
+
+	help = `
+/|||||\ |-o-o-~|
+
+Usage: 
+
+wb [name]            -> vim into a wb
+wb nu [name]         -> create a new wb
+wb cp [copy] [name]  -> duplicate a wb
+wb cat [name]        -> print wb contents to console
+wb rm [name]         -> remove a wb
+wb ls                -> list all the wbs in console
+wb push [msg]        -> git push the boards directory
+
+note - if the [name] is not provided, 
+the default board named 'wb' will be used
+`
 )
 
 func main() {
@@ -38,7 +56,7 @@ func main() {
 	case 1:
 		switch args[0] {
 		case keyHelp1, keyHelp2:
-			printHelp()
+			fmt.Println(help)
 		case keyPush:
 			push("")
 		case keyView:
@@ -97,7 +115,7 @@ func main() {
 			break
 		}
 	case 3:
-		if args[0] != keyDuplicate {
+		if args[0] != keyCopy {
 			break
 		}
 		duplicate(args[1], args[2])
@@ -105,27 +123,6 @@ func main() {
 	}
 	fmt.Println("invalid number of args")
 	return
-}
-
-func printHelp() {
-	fmt.Println(`
-/|||||\ |-o-o-~|
-
-Usage: 
-
-wb [name]            -> edit the wb
-wb nu [name]         -> create a new wb
-wb cp [copy] [name]  -> duplicate a wb
-wb cat [name]        -> view a wb
-wb rm [name]         -> remove a wb
-wb ls                -> list all the wbs
-
-wb backup            -> aws backup all wbs
-wb push [msg]        -> aws push all wbs
-
-note - if the [boardname] is not provided, 
-the default board named 'wb' will be used.
-`)
 }
 
 func list() {
