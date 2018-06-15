@@ -27,6 +27,8 @@ const (
 	keyHelp2 = "-h"
 
 	defaultWB = "wb"
+	lsWB      = "lsls"
+	logWB     = "log" //TODO implement
 
 	help = `
 /|||||\ |-o-o-~|
@@ -127,6 +129,11 @@ func main() {
 
 func list() {
 
+	if lib.WbExists(lsWB) {
+		view(lsWB)
+		return
+	}
+
 	boardPath, err := lib.GetWbPath("")
 	if err != nil {
 		fmt.Println(err)
@@ -163,6 +170,11 @@ func remove(wbName string) {
 		fmt.Println(err.Error())
 		return
 	}
+	err = lib.RemoveFromLS(lsWB, wbName)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 
 	fmt.Println("roger, deleted successfully")
 }
@@ -185,6 +197,12 @@ func freshWB(wbName string) {
 		fmt.Println(err.Error())
 		return
 	}
+	err = lib.AddToLS(lsWB, wbName)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
 	fmt.Println("Squeaky clean whiteboard created for", wbName)
 
 	//now edit the wb
@@ -237,6 +255,11 @@ func duplicate(copyWB, newWB string) {
 	err = cmn.Copy(copyPath, newPath)
 	if err != nil {
 		fmt.Println(err)
+		return
+	}
+	err = lib.AddToLS(lsWB, newWB)
+	if err != nil {
+		fmt.Println(err.Error())
 		return
 	}
 	fmt.Printf("succesfully copied from %v to %v\n", copyWB, newWB)
