@@ -74,7 +74,7 @@ func main() {
 		case keyHelp1, keyHelp2:
 			fmt.Println(help)
 		case keyPush:
-			err = push("")
+			err = push(fmt.Sprintf("%v", time.Now()))
 			if err == nil {
 				lib.MustClearWB(logWB)
 				log("pushed", "n/a")
