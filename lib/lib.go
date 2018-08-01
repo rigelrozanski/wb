@@ -59,9 +59,22 @@ func RemoveFromLS(lsname, remove string) error {
 }
 
 // get the contents of a local wb
-func AddToLS(lsname, newWB string) error {
+func AddToLS(lsName, newWB string) error {
+	return PrependWB(lsName, todoStr(newWB))
+}
 
-	path, err := GetWbPath(lsname)
+// nolint
+func MustPrependWB(wbName, entry string) {
+	err := PrependWB(wbName, entry)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// prepend a string to a new top line within a wb
+func PrependWB(wbName, entry string) error {
+
+	path, err := GetWbPath(wbName)
 	if err != nil {
 		return err
 	}
@@ -74,9 +87,36 @@ func AddToLS(lsname, newWB string) error {
 		return err
 	}
 
-	content = append([]string{todoStr(newWB)}, content...)
+	content = append([]string{entry}, content...)
 
 	err = cmn.WriteLines(content, path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+// nolint
+func MustClearWB(wbName string) {
+	err := ClearWB(wbName)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// remove all the content of wb
+func ClearWB(wbName string) error {
+	path, err := GetWbPath(wbName)
+	if err != nil {
+		return err
+	}
+	if !cmn.FileExists(path) {
+		return err
+	}
+
+	err = cmn.WriteLines([]string{}, path)
 	if err != nil {
 		return err
 	}
