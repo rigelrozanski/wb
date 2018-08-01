@@ -23,6 +23,7 @@ const (
 	keyView   = "cat"
 	keyRemove = "rm"
 	keyList   = "ls"
+	keyLog    = "log"
 	keyPush   = "push"
 
 	keyHelp1 = "--help"
@@ -30,7 +31,7 @@ const (
 
 	defaultWB = "wb"
 	lsWB      = "lsls"
-	logWB     = "log" //TODO implement
+	logWB     = "loglog" //TODO implement
 
 	help = `
 /|||||\ |-o-o-~|
@@ -43,12 +44,13 @@ wb cp [copy] [name]  -> duplicate a wb
 wb cat [name]        -> print wb contents to console
 wb rm [name]         -> remove a wb
 wb ls                -> list all the wb in console
+wb log               -> list the log
 wb push [msg]        -> git push the boards directory
 
 notes:
 - if the [name] is not provided, 
   the default board named 'wb' will be used
-- special reserved wb names: wb, lsls, log 
+- special reserved wb names: wb, lsls, loglog 
 
 `
 )
@@ -73,9 +75,9 @@ func main() {
 			fmt.Println(help)
 		case keyPush:
 			err = push("")
-			if err != nil {
+			if err == nil {
 				lib.MustClearWB(logWB)
-				lib.MustPrependWB(logWB, fmt.Sprintf("last push: %v", time.Now()))
+				log("pushed", "n/a")
 			}
 			break
 		case keyView:
@@ -83,6 +85,9 @@ func main() {
 			break
 		case keyList:
 			err = list()
+			break
+		case keyLog:
+			err = listLog()
 			break
 		case keyNew, keyRemove:
 			fmt.Println("invalid argments, must specify name of board")
@@ -159,7 +164,7 @@ func main() {
 }
 
 func log(action, wbName string) {
-	lib.MustPrependWB(logWB, fmt.Sprintf("time: %v\taction: %v\t wbName:%v", time.Now(), action, wbName))
+	lib.MustPrependWB(logWB, fmt.Sprintf("time: %v\taction: %v\t wbName: %v", time.Now(), action, wbName))
 }
 
 func list() error {
@@ -167,14 +172,16 @@ func list() error {
 	if lib.WbExists(lsWB) {
 		return view(lsWB)
 	}
-
 	boardPath, err := lib.GetWbPath("")
 	if err != nil {
 		return err
 	}
-
 	filepath.Walk(boardPath, visit)
 	return nil
+}
+
+func listLog() error {
+	return view(logWB)
 }
 
 // TODO ioutils instead of visit
