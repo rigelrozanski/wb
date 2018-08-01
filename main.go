@@ -57,11 +57,15 @@ func main() {
 	args := os.Args[1:]
 	errBadArgs := errors.New("invalid number of args")
 	var err error
+	var modified bool
 
 	switch len(args) {
 	case 0:
 		// open the main wb
-		err = edit(defaultWB)
+		modified, err = edit(defaultWB)
+		if modified {
+			log("modified wb", defaultWB)
+		}
 		break
 	case 1:
 		switch args[0] {
@@ -84,7 +88,11 @@ func main() {
 			fmt.Println("invalid argments, must specify name of board")
 		default:
 			// open the wb board with the name of the argument
-			err = edit(args[0])
+			name := args[0]
+			modified, err = edit(name)
+			if modified {
+				log("modified wb", name)
+			}
 			break
 		}
 	case 2:
@@ -226,18 +234,25 @@ func freshWB(wbName string) error {
 	fmt.Println("Squeaky clean whiteboard created for", wbName)
 
 	//now edit the wb
-	return edit(wbName)
+	_, err = edit(wbName)
+	return err
 }
 
-func edit(wbName string) error {
-	wbPath, err := lib.GetWbPath(wbName)
-	if err != nil {
-		return err
+func edit(wbName string) (modified bool, err error) {
+
+	origContent, found := lib.GetWB(wbName)
+	if !found {
+		return false, fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
 	}
 
-	if !cmn.FileExists(wbPath) {
-		return fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
+	wbPath, err := lib.GetWbPath(wbName)
+	if err != nil {
+		return false, err
 	}
+
+	//if !cmn.FileExists(wbPath) {
+	//return false, fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
+	//}
 
 	//cmd := exec.Command("vim", "-c", "startreplace | +normal 25G70|", wbPath) //start with replace
 	cmd := exec.Command("vim", "-c", "+normal 1G1|", wbPath) //start in the upper left corner nomatter
@@ -245,9 +260,25 @@ func edit(wbName string) error {
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
 	if err != nil {
-		return err
+		return false, err
 	}
-	return nil
+
+	// determine if was modified
+	newContent, found := lib.GetWB(wbName)
+	if !found {
+		panic("wuz found now isn't")
+	}
+
+	if len(newContent) != len(origContent) {
+		return true, nil
+	}
+
+	for i, line := range origContent {
+		if line != newContent[i] {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func duplicate(copyWB, newWB string) error {
