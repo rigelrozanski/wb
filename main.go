@@ -24,6 +24,7 @@ const (
 	keyRemove = "rm"
 	keyList   = "ls"
 	keyLog    = "log"
+	keyStats  = "stats"
 	keyPush   = "push"
 
 	keyHelp1 = "--help"
@@ -45,6 +46,7 @@ wb cat [name]        -> print wb contents to console
 wb rm [name]         -> remove a wb
 wb ls                -> list all the wb in console
 wb log               -> list the log
+wb stats             -> list git statistics per wb
 wb push [msg]        -> git push the boards directory
 
 notes:
@@ -88,6 +90,9 @@ func main() {
 			break
 		case keyLog:
 			err = listLog()
+			break
+		case keyStats:
+			err = listStats()
 			break
 		case keyNew, keyRemove:
 			fmt.Println("invalid argments, must specify name of board")
@@ -182,6 +187,16 @@ func list() error {
 
 func listLog() error {
 	return view(logWB)
+}
+
+func listStats() error {
+
+	iterFn := func(_, relPath string) (stop bool) {
+		fmt.Println(relPath)
+		return false
+	}
+	lib.IterateWBs(iterFn)
+	return nil
 }
 
 // TODO ioutils instead of visit

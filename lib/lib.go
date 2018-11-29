@@ -158,3 +158,32 @@ func GetWbBackupRepoPath() (string, error) {
 	}
 	return lines[0], nil
 }
+
+// function for iterating over the wbs
+type IterateFn func(name, relPath string) (stop bool)
+
+// perform the provided iterateFn for all wbs
+func IterateWBs(iterFn IterateFn) error {
+
+	boardPath, err := GetWbPath("")
+	if err != nil {
+		return err
+	}
+
+	files, err := ioutil.ReadDir(boardPath)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		name := file.Name()
+		relPath, err := GetWbPath(name)
+		if err != nil {
+			return err
+		}
+		if iterFn(name, relPath) {
+			break
+		}
+	}
+	return nil
+}
