@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	pathL "path"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -189,13 +191,72 @@ func listLog() error {
 	return view(logWB)
 }
 
-func listStats() error {
+type stat struct {
+	name      string
+	additions int
+	deletions int
+}
 
-	iterFn := func(_, relPath string) (stop bool) {
-		fmt.Println(relPath)
+func listStats() error {
+	wbDir, err := lib.GetWbBackupRepoPath()
+	if err != nil {
+		return err
+	}
+
+	var stats []stat
+
+	iterFn := func(name, relPath string) (stop bool) {
+
+		getStatsCmd := `git -C ` + wbDir + ` log` +
+			` --pretty=tformat: --numstat ` + relPath
+		out, err := cmn.Execute(getStatsCmd)
+		if err != nil {
+			panic(err)
+		}
+		lines := strings.Split(out, "\n")
+		additionsTot, deletionsTot := 0, 0
+		for _, line := range lines {
+			line := strings.Split(line, "\t")
+			if len(line) != 3 {
+				continue
+			}
+			additions, err := strconv.Atoi(line[0])
+			if err != nil {
+				continue
+			}
+			deletions, err := strconv.Atoi(line[1])
+			if err != nil {
+				continue
+			}
+			additionsTot += additions
+			deletionsTot += deletions
+		}
+		stats = append(stats, stat{name, additionsTot, deletionsTot})
+		if err != nil {
+			panic(err)
+		}
 		return false
 	}
 	lib.IterateWBs(iterFn)
+
+	// sort and print
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].additions < stats[j].additions
+	})
+	fmt.Println("Add\tDel\tName")
+	for _, stat := range stats {
+
+		// ignore some special wb
+		if strings.Contains(stat.name, ".") ||
+			stat.name == lsWB ||
+			stat.name == logWB {
+
+			continue
+		}
+		fmt.Printf("%v\t%v\t%v\n", stat.additions,
+			stat.deletions, stat.name)
+	}
+
 	return nil
 }
 
@@ -272,11 +333,6 @@ func edit(wbName string) (modified bool, err error) {
 		return false, err
 	}
 
-	//if !cmn.FileExists(wbPath) {
-	//return false, fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
-	//}
-
-	//cmd := exec.Command("vim", "-c", "startreplace | +normal 25G70|", wbPath) //start with replace
 	cmd := exec.Command("vim", "-c", "+normal 1G1|", wbPath) //start in the upper left corner nomatter
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

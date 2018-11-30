@@ -159,6 +159,15 @@ func GetWbBackupRepoPath() (string, error) {
 	return lines[0], nil
 }
 
+// get the full path of a wb backup repo
+func GetBoardsGITDir() (string, error) {
+	wbBackupRepoPath, err := GetWbBackupRepoPath()
+	if err != nil {
+		return "", err
+	}
+	return pathL.Join(wbBackupRepoPath, ".git"), nil
+}
+
 // function for iterating over the wbs
 type IterateFn func(name, relPath string) (stop bool)
 
