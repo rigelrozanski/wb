@@ -40,6 +40,8 @@ while navigated to any directory.
  - a file in the root of this repo named `push.sh` set's the custom commands to
    trigger when the command `wb push` is used. I use these to backup my wbs in
    a private git repository :)
+ - shortcuts can be defined within the wb named `shortcuts`. Each shortcut 
+   is defined on a new line as follows: `shortcut-name wb-name` 
  - The following are reserved words which can not be used for custom boards:
    - new
    - cat

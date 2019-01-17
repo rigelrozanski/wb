@@ -32,9 +32,10 @@ const (
 	keyHelp1 = "--help"
 	keyHelp2 = "-h"
 
-	defaultWB = "wb"
-	lsWB      = "lsls"
-	logWB     = "loglog" //TODO implement
+	defaultWB   = "wb"
+	lsWB        = "lsls"
+	logWB       = "loglog"
+	shortcutsWB = "shortcuts"
 
 	help = `
 /|||||\ |-o-o-~|
@@ -324,7 +325,28 @@ func freshWB(wbName string) error {
 func edit(wbName string) (modified bool, err error) {
 
 	origContent, found := lib.GetWB(wbName)
+	errNE := false
 	if !found {
+		// check for shortcuts
+		shortcuts, foundSC := lib.GetWB(shortcutsWB)
+		if !foundSC {
+			errNE = true
+		} else {
+			errNE = true
+			for _, shortcut := range shortcuts {
+				str := strings.Split(shortcut, " ")
+				if len(str) != 2 {
+					break
+				}
+				if str[0] == wbName { // shortcut found
+					errNE = false
+					wbName = str[1]
+					break
+				}
+			}
+		}
+	}
+	if errNE {
 		return false, fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
 	}
 
