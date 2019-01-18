@@ -69,7 +69,7 @@ func main() {
 	switch len(args) {
 	case 0:
 		// open the main wb
-		modified, err = edit(defaultWB)
+		modified, _, err = edit(defaultWB)
 		if modified {
 			log("modified wb", defaultWB)
 		}
@@ -102,7 +102,7 @@ func main() {
 		default:
 			// open the wb board with the name of the argument
 			name := args[0]
-			modified, err = edit(name)
+			modified, name, err = edit(name)
 			if modified {
 				log("modified wb", name)
 			}
@@ -318,11 +318,11 @@ func freshWB(wbName string) error {
 	fmt.Println("Squeaky clean whiteboard created for", wbName)
 
 	//now edit the wb
-	_, err = edit(wbName)
+	_, _, err = edit(wbName)
 	return err
 }
 
-func edit(wbName string) (modified bool, err error) {
+func edit(wbName string) (modified bool, nameUpdate string, err error) {
 
 	origContent, found := lib.GetWB(wbName)
 	errNE := false
@@ -347,12 +347,12 @@ func edit(wbName string) (modified bool, err error) {
 		}
 	}
 	if errNE {
-		return false, fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
+		return false, wbName, fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
 	}
 
 	wbPath, err := lib.GetWbPath(wbName)
 	if err != nil {
-		return false, err
+		return false, wbName, err
 	}
 
 	cmd := exec.Command("vim", "-c", "+normal 1G1|", wbPath) //start in the upper left corner nomatter
@@ -360,7 +360,7 @@ func edit(wbName string) (modified bool, err error) {
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
 	if err != nil {
-		return false, err
+		return false, wbName, err
 	}
 
 	// determine if was modified
@@ -370,15 +370,15 @@ func edit(wbName string) (modified bool, err error) {
 	}
 
 	if len(newContent) != len(origContent) {
-		return true, nil
+		return true, wbName, nil
 	}
 
 	for i, line := range origContent {
 		if line != newContent[i] {
-			return true, nil
+			return true, wbName, nil
 		}
 	}
-	return false, nil
+	return false, wbName, nil
 }
 
 func duplicate(copyWB, newWB string) error {
