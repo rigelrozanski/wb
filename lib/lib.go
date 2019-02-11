@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	pathL "path"
 	"strings"
 
@@ -26,6 +27,25 @@ func GetWB(name string) (content []string, found bool) {
 	content, err = cmn.ReadLines(path)
 	if err != nil {
 		return content, false
+	}
+
+	return content, true
+}
+
+// get the contents of a local wb in bytes
+func GetWBRaw(name string) (content []byte, found bool) {
+
+	path, err := GetWbPath(name)
+	if err != nil {
+		return content, false
+	}
+	if !cmn.FileExists(path) {
+		return content, false
+	}
+
+	content, err = ioutil.ReadFile(path)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	return content, true
