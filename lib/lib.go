@@ -1,10 +1,13 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	pathL "path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -12,7 +15,10 @@ import (
 )
 
 // directory name where boards are stored in repo
-var BoardsDir = "boards"
+var (
+	BoardsDir = "boards"
+	TrashDir  = "trash"
+)
 
 // get the contents of a local wb
 func GetWB(name string) (content []string, found bool) {
@@ -165,11 +171,102 @@ func WbExists(name string) (found bool) {
 
 // get the full path of a wb
 func GetWbPath(wbName string) (string, error) {
+	return GetRepoPath(wbName, BoardsDir)
+}
+
+// get the full path of a wb in the trash
+func GetWbInTrashPath(wbName string) (string, error) {
+	return GetRepoPath(wbName, TrashDir)
+}
+
+// get the full path of a wb in the trash
+func GetTrashPath() (string, error) {
+	return GetRepoPath("", TrashDir)
+}
+
+// get the full path of a wb in a directory
+func GetRepoPath(wbName, dir string) (string, error) {
 	wbBackupRepoPath, err := GetWbBackupRepoPath()
 	if err != nil {
 		return "", err
 	}
-	return pathL.Join(wbBackupRepoPath, BoardsDir, wbName), nil
+	return pathL.Join(wbBackupRepoPath, dir, wbName), nil
+}
+
+// move a wb from the boards dir to the trash DIR
+func MoveWbToTrash(wbName string) error {
+
+	wbBoardsPath, err := GetWbPath(wbName)
+	if err != nil {
+		return err
+	}
+	if !cmn.FileExists(wbBoardsPath) { //does the whiteboard not exist
+		return errors.New("error can't delete non-existent whiteboard")
+	}
+
+	// make the trash path if it doesn't exist
+	trashPath, err := GetTrashPath()
+	if err != nil {
+		return err
+	}
+	os.MkdirAll(trashPath, os.ModePerm)
+
+	wbTrashPath, err := GetWbInTrashPath(wbName)
+	if err != nil {
+		return err
+	}
+	err = os.Rename(wbBoardsPath, wbTrashPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// delete all wbs in the trash folder
+func EmptyTrash() error {
+
+	trashPath, err := GetTrashPath()
+	if err != nil {
+		return err
+	}
+
+	d, err := os.Open(trashPath)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(trashPath, name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// move a wb from the boards dir to the trash DIR
+func RecoverWbFromTrash(wbName string) error {
+
+	wbBoardsPath, err := GetWbPath(wbName)
+	if err != nil {
+		return err
+	}
+	wbTrashPath, err := GetWbInTrashPath(wbName)
+	if err != nil {
+		return err
+	}
+	if !cmn.FileExists(wbTrashPath) { //does the whiteboard not exist
+		return errors.New("error can't recover - non-existent in trash")
+	}
+	err = os.Rename(wbTrashPath, wbBoardsPath)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // get the full path of a wb backup repo

@@ -32,6 +32,7 @@ while navigated to any directory.
 | wb rm foo  | Deletes 'foo'                                   |
 | wb ls      | List all whiteboards                            |
 | wb log     | List all changes to whiteboards since last push |
+| wb stats   | List repo stats, additions, deletions per wb    |
 
 ### Other Notes
  - a file in the root of this repo named config.txt can be used to setup a
@@ -48,6 +49,7 @@ while navigated to any directory.
    - rm
    - ls
    - log
+   - stats
 
 ### License
 

@@ -20,14 +20,16 @@ import (
 
 //keywords used throughout wb
 const (
-	keyNew    = "new"
-	keyCopy   = "cp"
-	keyView   = "cat"
-	keyRemove = "rm"
-	keyList   = "ls"
-	keyLog    = "log"
-	keyStats  = "stats"
-	keyPush   = "push"
+	keyNew        = "new"
+	keyCopy       = "cp"
+	keyView       = "cat"
+	keyRemove     = "rm"
+	keyRecover    = "recover"
+	keyEmptyTrash = "empty-trash"
+	keyList       = "ls"
+	keyLog        = "log"
+	keyStats      = "stats"
+	keyPush       = "push"
 
 	keyHelp1 = "--help"
 	keyHelp2 = "-h"
@@ -46,7 +48,9 @@ wb [name]            -> vim into a wb
 wb new [name]        -> create a new wb
 wb cp [copy] [name]  -> duplicate a wb
 wb cat [name]        -> print wb contents to console
-wb rm [name]         -> remove a wb
+wb rm [name]         -> remove a wb (add to trash)
+wb recover [name]    -> remove a wb from trash
+wb empty-trash       -> empty trash
 wb ls                -> list all the wb in console
 wb log               -> list the log
 wb stats             -> list git statistics per wb
@@ -55,7 +59,7 @@ wb push [msg]        -> git push the boards directory
 notes:
 - if the [name] is not provided, 
   the default board named 'wb' will be used
-- special reserved wb names: wb, lsls, loglog 
+- special reserved wb names: wb, lsls, loglog
 
 `
 )
@@ -91,6 +95,10 @@ func main() {
 		case keyList:
 			err = list()
 			break
+		case keyEmptyTrash:
+			err = emptyTrash()
+			log("emptied trash", "n/a")
+			break
 		case keyLog:
 			err = listLog()
 			break
@@ -111,7 +119,7 @@ func main() {
 	case 2:
 
 		//edit/delete/create-new board
-		Bview, Bdelete, Bnew := false, false, false
+		Bview, Bdelete, Brecover, Bnew := false, false, false, false
 		noRsrvArgs := 0
 
 		boardArg := -1
@@ -123,10 +131,13 @@ func main() {
 			case keyRemove:
 				Bdelete = true
 				noRsrvArgs++
+			case keyRecover:
+				Brecover = true
+				noRsrvArgs++
 			case keyNew:
 				Bnew = true
 				noRsrvArgs++
-			case keyList:
+			case keyList, keyEmptyTrash:
 				break
 			default:
 				boardArg = i
@@ -149,6 +160,11 @@ func main() {
 			name := args[boardArg]
 			err = remove(name)
 			log("deleted wb", name)
+			break
+		case Brecover:
+			name := args[boardArg]
+			err = recoverWb(name)
+			log("recovered wb", name)
 			break
 		default:
 			err = errBadArgs
@@ -273,25 +289,41 @@ func visit(path string, f os.FileInfo, err error) error {
 }
 
 func remove(wbName string) error {
-	wbPath, err := lib.GetWbPath(wbName)
+	err := lib.MoveWbToTrash(wbName)
 	if err != nil {
 		return err
 	}
 
-	if !cmn.FileExists(wbPath) { //does the whiteboard not exist
-		return errors.New("error can't delete non-existent whiteboard")
-	}
-
-	err = os.Remove(wbPath)
-	if err != nil {
-		return err
-	}
 	err = lib.RemoveFromLS(lsWB, wbName)
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("roger, deleted successfully")
+	return nil
+}
+
+func recoverWb(wbName string) error {
+	err := lib.RecoverWbFromTrash(wbName)
+	if err != nil {
+		return err
+	}
+
+	err = lib.AddToLS(lsWB, wbName)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("roger, recovered")
+	return nil
+}
+
+func emptyTrash() error {
+	err := lib.EmptyTrash()
+	if err != nil {
+		return err
+	}
+	fmt.Println("roger, emptied the trash")
 	return nil
 }
 
