@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	pathL "path"
+	"strconv"
 	"strings"
 
 	cmn "github.com/rigelrozanski/common"
@@ -68,8 +69,13 @@ func RemoveFromLS(lsname, remove string) error {
 	}
 	fileStr := string(bz)
 
-	fileStr = strings.Replace(fileStr, "\n"+todoStr(remove), "", 1)
-	fileStr = strings.Replace(fileStr, fmt.Sprintf("[%s]", remove), "", 1)
+	// replace any todo lines
+	fileStr = strings.Replace(fileStr, todoStr(remove)+"\n", "", 1)
+
+	// alternatively replace w whitespace
+	whitespace := fmt.Sprintf(`%`+strconv.Itoa(len(remove)+2)+`v`, " ")
+	fileStr = strings.Replace(fileStr, fmt.Sprintf("[%s]", remove), whitespace, 1)
+
 	err = ioutil.WriteFile(path, []byte(fileStr), 0644)
 	if err != nil {
 		return err
