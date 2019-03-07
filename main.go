@@ -366,20 +366,21 @@ func edit(wbName string) (modified bool, nameUpdate string, err error) {
 		} else {
 			errNE = true
 			for _, shortcut := range shortcuts {
-				str := strings.Split(shortcut, " ")
-				if len(str) != 2 {
-					break
+				str := strings.Fields(shortcut)
+				if len(str) < 3 {
+					continue
 				}
-				if str[0] == wbName { // shortcut found
+				if str[0] == wbName && str[1] == "->" { // shortcut found
 					errNE = false
-					wbName = str[1]
+					wbName = str[2]
 					break
 				}
 			}
 		}
 	}
 	if errNE {
-		return false, wbName, fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
+		return false, wbName,
+			fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
 	}
 
 	wbPath, err := lib.GetWbPath(wbName)
