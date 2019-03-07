@@ -3,19 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"os/exec"
-	pathL "path"
-	"path/filepath"
-	"sort"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/rigelrozanski/wb/lib"
-
-	cmn "github.com/rigelrozanski/common"
 )
 
 //keywords used throughout wb
@@ -71,461 +62,176 @@ var (
 func main() {
 	args := os.Args[1:]
 
+	var err error
 	switch len(args) {
 	case 0:
-		// open the main wb
-		modified, _, err := edit(defaultWB)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		if modified {
-			log("modified wb", defaultWB)
-		}
+		err = openDefaultWB()
 	case 1:
-		switch args[0] {
-		case keyHelp1, keyHelp2:
-			fmt.Println(help)
-		case keyPush:
-			err := push(fmt.Sprintf("%v", time.Now()))
-			if err != nil {
-				fmt.Println(err)
-			}
-			lib.MustClearWB(logWB)
-			log("pushed", "n/a")
-		case keyView:
-			err := view(defaultWB)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		case keyList:
-			err := list()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		case keyEmptyTrash:
-			err := emptyTrash()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			log("emptied trash", "n/a")
-		case keyLog:
-			err := listLog()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		case keyStats:
-			err := listStats()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		case keyNew, keyRemove:
-			fmt.Println("invalid argments, must specify name of board")
-		default:
-			// open the wb board with the name of the argument
-			name := args[0]
-			modified, name, err := edit(name)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			if modified {
-				log("modified wb", name)
-			}
-		}
+		err = handle1Args(args)
 	case 2:
-
-		//edit/delete/create-new board
-		Bview, Bdelete, Brecover, Bnew := false, false, false, false
-		noRsrvArgs := 0
-
-		boardArg := -1
-		for i := 0; i < len(args); i++ {
-			switch args[i] {
-			case keyView:
-				Bview = true
-				noRsrvArgs++
-			case keyRemove:
-				Bdelete = true
-				noRsrvArgs++
-			case keyRecover:
-				Brecover = true
-				noRsrvArgs++
-			case keyNew:
-				Bnew = true
-				noRsrvArgs++
-			case keyList, keyEmptyTrash:
-				break
-			default:
-				boardArg = i
-			}
-		}
-
-		switch {
-		case noRsrvArgs != 1:
-			err := errBadArgs
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		case Bnew:
-			name := args[boardArg]
-			err := freshWB(name)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			log("created wb", name)
-		case Bview:
-			err := view(args[boardArg])
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		case Bdelete:
-			name := args[boardArg]
-			err := remove(name)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			log("deleted wb", name)
-		case Brecover:
-			name := args[boardArg]
-			err := recoverWb(name)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			log("recovered wb", name)
-		default:
-			fmt.Println(errBadArgs)
-			return
-		}
-
+		err = handle2Args(args)
 	case 3:
-		if args[0] != keyCopy {
-			fmt.Println(errBadArgs)
-			return
-		}
-		err := duplicate(args[1], args[2])
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		log("duplicated from "+args[1], args[2])
-
+		err = handle3Args(args)
 	default:
 		fmt.Println(errBadArgs)
 	}
-}
-
-func log(action, wbName string) {
-	lib.MustPrependWB(logWB, fmt.Sprintf("time: %v\taction: %v\t wbName: %v", time.Now(), action, wbName))
-}
-
-func list() error {
-
-	if lib.WbExists(lsWB) {
-		return view(lsWB)
+	if err != nil {
+		fmt.Println(err)
 	}
-	boardPath, err := lib.GetWbPath("")
+}
+
+func openDefaultWB() error {
+	// open the main wb
+	modified, _, err := edit(defaultWB)
 	if err != nil {
 		return err
 	}
-	filepath.Walk(boardPath, visit)
+	if modified {
+		log("modified wb", defaultWB)
+	}
 	return nil
 }
 
-func listLog() error {
-	return view(logWB)
-}
-
-type stat struct {
-	name      string
-	additions int
-	deletions int
-}
-
-func listStats() error {
-	wbDir, err := lib.GetWbBackupRepoPath()
-	if err != nil {
-		return err
+func handle1Args(args []string) error {
+	if len(args) != 1 {
+		panic("improper args")
 	}
-
-	var stats []stat
-
-	iterFn := func(name, relPath string) (stop bool) {
-
-		getStatsCmd := `git -C ` + wbDir + ` log` + ` --pretty=tformat: --numstat ` + relPath
-		out, err := cmn.Execute(getStatsCmd)
+	switch args[0] {
+	case keyHelp1, keyHelp2:
+		fmt.Println(help)
+	case keyPush:
+		err := push(fmt.Sprintf("%v", time.Now()))
 		if err != nil {
-			panic(err)
+			return err
 		}
-		lines := strings.Split(out, "\n")
-		additionsTot, deletionsTot := 0, 0
-		for _, line := range lines {
-			line := strings.Split(line, "\t")
-			if len(line) != 3 {
-				continue
-			}
-			additions, err := strconv.Atoi(line[0])
-			if err != nil {
-				continue
-			}
-			deletions, err := strconv.Atoi(line[1])
-			if err != nil {
-				continue
-			}
-			additionsTot += additions
-			deletionsTot += deletions
-		}
-		stats = append(stats, stat{name, additionsTot, deletionsTot})
+		lib.MustClearWB(logWB)
+		log("pushed", "n/a")
+	case keyView:
+		err := view(defaultWB)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		return false
-	}
-	lib.IterateWBs(iterFn)
-
-	// sort and print
-	sort.Slice(stats, func(i, j int) bool {
-		return stats[i].additions < stats[j].additions
-	})
-	fmt.Println("Add\tDel\tName")
-	for _, stat := range stats {
-
-		// ignore some special wb
-		if strings.Contains(stat.name, ".") ||
-			stat.name == lsWB ||
-			stat.name == logWB {
-
-			continue
+	case keyList:
+		err := list()
+		if err != nil {
+			return err
 		}
-		fmt.Printf("%v\t%v\t%v\n", stat.additions,
-			stat.deletions, stat.name)
+	case keyEmptyTrash:
+		err := emptyTrash()
+		if err != nil {
+			return err
+		}
+		log("emptied trash", "n/a")
+	case keyLog:
+		err := listLog()
+		if err != nil {
+			return err
+		}
+	case keyStats:
+		err := listStats()
+		if err != nil {
+			return err
+		}
+	case keyNew, keyRemove:
+		fmt.Println("invalid argments, must specify name of board")
+	default:
+		// open the wb board with the name of the argument
+		name := args[0]
+		modified, name, err := edit(name)
+		if err != nil {
+			return err
+		}
+		if modified {
+			log("modified wb", name)
+		}
 	}
 
 	return nil
 }
 
-// TODO ioutils instead of visit
-func visit(path string, f os.FileInfo, err error) error {
-
-	basePath := pathL.Base(path)
-	basePath = strings.Replace(basePath, lib.BoardsDir, "", 1) //remove the boards dir
-	if len(basePath) > 0 {
-		fmt.Println(basePath)
-	}
-	return nil
-}
-
-func remove(wbName string) error {
-	err := lib.MoveWbToTrash(wbName)
-	if err != nil {
-		return err
+// TODO this is spagetti - fix!
+func handle2Args(args []string) error {
+	if len(args) != 2 {
+		panic("improper args")
 	}
 
-	err = lib.RemoveFromLS(lsWB, wbName)
-	if err != nil {
-		return err
-	}
+	//edit/delete/create-new board
+	Bview, Bdelete, Brecover, Bnew := false, false, false, false
+	noRsrvArgs := 0
 
-	fmt.Println("roger, deleted successfully")
-	return nil
-}
-
-func recoverWb(wbName string) error {
-	err := lib.RecoverWbFromTrash(wbName)
-	if err != nil {
-		return err
-	}
-
-	err = lib.AddToLS(lsWB, wbName)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("roger, recovered")
-	return nil
-}
-
-func emptyTrash() error {
-	err := lib.EmptyTrash()
-	if err != nil {
-		return err
-	}
-	fmt.Println("roger, emptied the trash")
-	return nil
-}
-
-func freshWB(wbName string) error {
-	wbPath, err := lib.GetWbPath(wbName)
-	if err != nil {
-		return err
-	}
-
-	if cmn.FileExists(wbPath) { //does the whiteboard already exist
-		return errors.New("error whiteboard already exists")
-	}
-
-	//create the blank canvas to work from
-	err = ioutil.WriteFile(wbPath, []byte(""), 0644)
-	if err != nil {
-		return err
-	}
-	err = lib.AddToLS(lsWB, wbName)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Squeaky clean whiteboard created for", wbName)
-
-	//now edit the wb
-	_, _, err = edit(wbName)
-	return err
-}
-
-func edit(wbName string) (modified bool, nameUpdate string, err error) {
-
-	origContent, found := lib.GetWB(wbName)
-	if !found {
-		// check for shortcuts
-		shortcuts, foundSC := lib.GetWB(shortcutsWB)
-		if !foundSC {
-			return false, wbName,
-				fmt.Errorf("that wb is not found (nor the shortcuts)")
+	boardArg := -1
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case keyView:
+			Bview = true
+			noRsrvArgs++
+		case keyRemove:
+			Bdelete = true
+			noRsrvArgs++
+		case keyRecover:
+			Brecover = true
+			noRsrvArgs++
+		case keyNew:
+			Bnew = true
+			noRsrvArgs++
+		case keyList, keyEmptyTrash:
+			break
+		default:
+			boardArg = i
 		}
-
-		shortcutFound := false
-		for _, shortcut := range shortcuts {
-			str := strings.Fields(shortcut)
-			if len(str) < 3 {
-				continue
-			}
-			if str[0] == wbName && str[1] == "->" { // shortcut found
-				shortcutFound = true
-				wbName = str[2]
-				break
-			}
-		}
-		if !shortcutFound {
-			return false, wbName,
-				fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
-		}
-	}
-
-	wbPath, err := lib.GetWbPath(wbName)
-	if err != nil {
-		return false, wbName, err
-	}
-
-	cmd := exec.Command("vim", "-c", "+normal 1G1|", wbPath) //start in the upper left corner nomatter
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	err = cmd.Run()
-	if err != nil {
-		return false, wbName, err
-	}
-
-	// determine if was modified
-	newContent, found := lib.GetWB(wbName)
-	if !found {
-		panic("wuz found now isn't")
-	}
-
-	if len(newContent) != len(origContent) {
-		return true, wbName, nil
-	}
-
-	for i, line := range origContent {
-		if line != newContent[i] {
-			return true, wbName, nil
-		}
-	}
-	return false, wbName, nil
-}
-
-func duplicate(copyWB, newWB string) error {
-	copyPath, err := lib.GetWbPath(copyWB)
-	if err != nil {
-		return err
-	}
-	if !cmn.FileExists(copyPath) {
-		return fmt.Errorf("error can't copy non-existent white board, please create it first by using %v", keyNew)
-	}
-
-	newPath, err := lib.GetWbPath(newWB)
-	if err != nil {
-		return err
-	}
-	if cmn.FileExists(newPath) {
-		return errors.New("error i will not overwrite an existing wb! ")
-	}
-
-	err = cmn.Copy(copyPath, newPath)
-	if err != nil {
-		return err
-	}
-	err = lib.AddToLS(lsWB, newWB)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("succesfully copied from %v to %v\n", copyWB, newWB)
-	return nil
-}
-
-func view(wbName string) error {
-	wbPath, err := lib.GetWbPath(wbName)
-	if err != nil {
-		return err
 	}
 
 	switch {
-	case !cmn.FileExists(wbPath) && wbName == defaultWB:
-		err := freshWB(defaultWB) //automatically create the default wb if it doesn't exist
+	case noRsrvArgs != 1:
+		err := errBadArgs
 		if err != nil {
 			return err
 		}
-	case !cmn.FileExists(wbPath) && wbName != defaultWB:
-		fmt.Println("error can't view non-existent white board, please create it first by using ", keyNew)
+	case Bnew:
+		name := args[boardArg]
+		err := freshWB(name)
+		if err != nil {
+			return err
+		}
+		log("created wb", name)
+	case Bview:
+		err := view(args[boardArg])
+		if err != nil {
+			return err
+		}
+	case Bdelete:
+		name := args[boardArg]
+		err := remove(name)
+		if err != nil {
+			return err
+		}
+		log("deleted wb", name)
+	case Brecover:
+		name := args[boardArg]
+		err := recoverWb(name)
+		if err != nil {
+			return err
+		}
+		log("recovered wb", name)
 	default:
-		wb, err := ioutil.ReadFile(wbPath)
-		if err != nil {
-			return err
-		}
-		fmt.Println(string(wb))
+		return errBadArgs
 	}
+
 	return nil
 }
 
-func push(commitMsg string) error {
-	if commitMsg == "" {
-		commitMsg = "wb commit"
+func handle3Args(args []string) error {
+	if len(args) != 3 {
+		panic("improper args")
 	}
-	wbBackupDir, err := lib.GetWbBackupRepoPath()
+
+	if args[0] != keyCopy {
+		return errBadArgs
+	}
+	err := duplicate(args[1], args[2])
 	if err != nil {
 		return err
 	}
-	shPath, err := cmn.GetRelPath("/src/github.com/rigelrozanski/wb", "push.sh")
-	if err != nil {
-		return err
-	}
-	cmn.WriteLines([]string{`#!/bin/bash
-git -C "` + wbBackupDir + `" add -A
-git -C "` + wbBackupDir + `" commit -m "` + commitMsg + `"
-git -C "` + wbBackupDir + `" push
-		`}, shPath)
-	cmd := exec.Command("/bin/bash", shPath)
-	_, err = cmd.Output()
-	if err != nil {
-		return err
-	}
-	fmt.Println("backup git push complete!")
+	log("duplicated from "+args[1], args[2])
 	return nil
 }
