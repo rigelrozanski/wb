@@ -64,57 +64,79 @@ notes:
 `
 )
 
+var (
+	errBadArgs = errors.New("invalid number of args")
+)
+
 func main() {
 	args := os.Args[1:]
-	errBadArgs := errors.New("invalid number of args")
-	var err error
-	var modified bool
 
 	switch len(args) {
 	case 0:
 		// open the main wb
-		modified, _, err = edit(defaultWB)
+		modified, _, err := edit(defaultWB)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 		if modified {
 			log("modified wb", defaultWB)
 		}
-		break
 	case 1:
 		switch args[0] {
 		case keyHelp1, keyHelp2:
 			fmt.Println(help)
 		case keyPush:
-			err = push(fmt.Sprintf("%v", time.Now()))
-			if err == nil {
-				lib.MustClearWB(logWB)
-				log("pushed", "n/a")
+			err := push(fmt.Sprintf("%v", time.Now()))
+			if err != nil {
+				fmt.Println(err)
 			}
-			break
+			lib.MustClearWB(logWB)
+			log("pushed", "n/a")
 		case keyView:
-			err = view(defaultWB)
-			break
+			err := view(defaultWB)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 		case keyList:
-			err = list()
-			break
+			err := list()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 		case keyEmptyTrash:
-			err = emptyTrash()
+			err := emptyTrash()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 			log("emptied trash", "n/a")
-			break
 		case keyLog:
-			err = listLog()
-			break
+			err := listLog()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 		case keyStats:
-			err = listStats()
-			break
+			err := listStats()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 		case keyNew, keyRemove:
 			fmt.Println("invalid argments, must specify name of board")
 		default:
 			// open the wb board with the name of the argument
 			name := args[0]
-			modified, name, err = edit(name)
+			modified, name, err := edit(name)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 			if modified {
 				log("modified wb", name)
 			}
-			break
 		}
 	case 2:
 
@@ -146,44 +168,60 @@ func main() {
 
 		switch {
 		case noRsrvArgs != 1:
-			err = errBadArgs
-			break
+			err := errBadArgs
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 		case Bnew:
 			name := args[boardArg]
-			err = freshWB(name)
+			err := freshWB(name)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 			log("created wb", name)
-			break
 		case Bview:
-			err = view(args[boardArg])
-			break
+			err := view(args[boardArg])
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 		case Bdelete:
 			name := args[boardArg]
-			err = remove(name)
+			err := remove(name)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 			log("deleted wb", name)
-			break
 		case Brecover:
 			name := args[boardArg]
-			err = recoverWb(name)
+			err := recoverWb(name)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 			log("recovered wb", name)
-			break
 		default:
-			err = errBadArgs
+			fmt.Println(errBadArgs)
+			return
 		}
 
 	case 3:
 		if args[0] != keyCopy {
-			err = errBadArgs
+			fmt.Println(errBadArgs)
+			return
 		}
-		err = duplicate(args[1], args[2])
+		err := duplicate(args[1], args[2])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 		log("duplicated from "+args[1], args[2])
-		break
 
 	default:
-		err = errBadArgs
-	}
-
-	if err != nil {
-		fmt.Println(err)
+		fmt.Println(errBadArgs)
 	}
 }
 
@@ -224,8 +262,7 @@ func listStats() error {
 
 	iterFn := func(name, relPath string) (stop bool) {
 
-		getStatsCmd := `git -C ` + wbDir + ` log` +
-			` --pretty=tformat: --numstat ` + relPath
+		getStatsCmd := `git -C ` + wbDir + ` log` + ` --pretty=tformat: --numstat ` + relPath
 		out, err := cmn.Execute(getStatsCmd)
 		if err != nil {
 			panic(err)
@@ -357,30 +394,30 @@ func freshWB(wbName string) error {
 func edit(wbName string) (modified bool, nameUpdate string, err error) {
 
 	origContent, found := lib.GetWB(wbName)
-	errNE := false
 	if !found {
 		// check for shortcuts
 		shortcuts, foundSC := lib.GetWB(shortcutsWB)
 		if !foundSC {
-			errNE = true
-		} else {
-			errNE = true
-			for _, shortcut := range shortcuts {
-				str := strings.Fields(shortcut)
-				if len(str) < 3 {
-					continue
-				}
-				if str[0] == wbName && str[1] == "->" { // shortcut found
-					errNE = false
-					wbName = str[2]
-					break
-				}
+			return false, wbName,
+				fmt.Errorf("that wb is not found (nor the shortcuts)")
+		}
+
+		shortcutFound := false
+		for _, shortcut := range shortcuts {
+			str := strings.Fields(shortcut)
+			if len(str) < 3 {
+				continue
+			}
+			if str[0] == wbName && str[1] == "->" { // shortcut found
+				shortcutFound = true
+				wbName = str[2]
+				break
 			}
 		}
-	}
-	if errNE {
-		return false, wbName,
-			fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
+		if !shortcutFound {
+			return false, wbName,
+				fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
+		}
 	}
 
 	wbPath, err := lib.GetWbPath(wbName)
