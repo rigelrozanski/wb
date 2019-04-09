@@ -1,9 +1,9 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rigelrozanski/wb/lib"
@@ -36,6 +36,7 @@ const (
 Usage: 
 
 wb [name]            -> vim into a wb
+wb [name] [entry]    -> fast entry appended as new line in wb
 wb new [name]        -> create a new wb
 wb cp [copy] [name]  -> duplicate a wb
 wb cat [name]        -> print wb contents to console
@@ -55,10 +56,6 @@ notes:
 `
 )
 
-var (
-	errBadArgs = errors.New("invalid number of args")
-)
-
 func main() {
 	args := os.Args[1:]
 
@@ -73,7 +70,9 @@ func main() {
 	case 3:
 		err = handle3Args(args)
 	default:
-		fmt.Println(errBadArgs)
+		name := args[0]
+		entry := strings.Join(args[1:], " ")
+		err = fastEntry(name, entry)
 	}
 	if err != nil {
 		fmt.Println(err)
@@ -82,7 +81,7 @@ func main() {
 
 func openDefaultWB() error {
 	// open the main wb
-	modified, _, err := edit(defaultWB)
+	modified, err := edit(defaultWB)
 	if err != nil {
 		return err
 	}
@@ -137,7 +136,7 @@ func handle1Args(args []string) error {
 	default:
 		// open the wb board with the name of the argument
 		name := args[0]
-		modified, name, err := edit(name)
+		modified, err := edit(name)
 		if err != nil {
 			return err
 		}
@@ -182,11 +181,6 @@ func handle2Args(args []string) error {
 	}
 
 	switch {
-	case noRsrvArgs != 1:
-		err := errBadArgs
-		if err != nil {
-			return err
-		}
 	case Bnew:
 		name := args[boardArg]
 		err := freshWB(name)
@@ -214,7 +208,9 @@ func handle2Args(args []string) error {
 		}
 		log("recovered wb", name)
 	default:
-		return errBadArgs
+		name := args[0]
+		entry := args[1]
+		return fastEntry(name, entry)
 	}
 
 	return nil
@@ -225,13 +221,18 @@ func handle3Args(args []string) error {
 		panic("improper args")
 	}
 
-	if args[0] != keyCopy {
-		return errBadArgs
+	switch args[0] {
+	case keyCopy:
+		err := duplicate(args[1], args[2])
+		if err != nil {
+			return err
+		}
+		log("duplicated from "+args[1], args[2])
+	default:
+		name := args[0]
+		entry := strings.Join(args[1:], " ")
+		return fastEntry(name, entry)
 	}
-	err := duplicate(args[1], args[2])
-	if err != nil {
-		return err
-	}
-	log("duplicated from "+args[1], args[2])
+
 	return nil
 }

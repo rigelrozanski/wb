@@ -180,42 +180,47 @@ func freshWB(wbName string) error {
 	fmt.Println("Squeaky clean whiteboard created for", wbName)
 
 	//now edit the wb
-	_, _, err = edit(wbName)
+	_, err = edit(wbName)
 	return err
 }
 
-func edit(wbName string) (modified bool, nameUpdate string, err error) {
+func getNameFromShortcut(shortcutName string) (name string, err error) {
+	shortcuts, foundSC := lib.GetWB(shortcutsWB)
+	if !foundSC {
+		return "", fmt.Errorf("that wb is not found (nor the shortcuts)")
+	}
+
+	shortcutFound := false
+	for _, shortcut := range shortcuts {
+		str := strings.Fields(shortcut)
+		if len(str) < 3 {
+			continue
+		}
+		if str[0] == shortcutName && str[1] == "->" { // shortcut found
+			shortcutFound = true
+			name = str[2]
+			break
+		}
+	}
+	if !shortcutFound {
+		return "", fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
+	}
+	return name, nil
+}
+
+func edit(wbName string) (modified bool, err error) {
 
 	origContent, found := lib.GetWB(wbName)
 	if !found {
-		// check for shortcuts
-		shortcuts, foundSC := lib.GetWB(shortcutsWB)
-		if !foundSC {
-			return false, wbName,
-				fmt.Errorf("that wb is not found (nor the shortcuts)")
-		}
-
-		shortcutFound := false
-		for _, shortcut := range shortcuts {
-			str := strings.Fields(shortcut)
-			if len(str) < 3 {
-				continue
-			}
-			if str[0] == wbName && str[1] == "->" { // shortcut found
-				shortcutFound = true
-				wbName = str[2]
-				break
-			}
-		}
-		if !shortcutFound {
-			return false, wbName,
-				fmt.Errorf("error can't edit non-existent white board, please create it first by using %v", keyNew)
+		wbName, err = getNameFromShortcut(wbName)
+		if err != nil {
+			return false, err
 		}
 	}
 
 	wbPath, err := lib.GetWbPath(wbName)
 	if err != nil {
-		return false, wbName, err
+		return false, err
 	}
 
 	cmd := exec.Command("vim", "-c", "+normal 1G1|", wbPath) //start in the upper left corner nomatter
@@ -223,7 +228,7 @@ func edit(wbName string) (modified bool, nameUpdate string, err error) {
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
 	if err != nil {
-		return false, wbName, err
+		return false, err
 	}
 
 	// determine if was modified
@@ -233,15 +238,39 @@ func edit(wbName string) (modified bool, nameUpdate string, err error) {
 	}
 
 	if len(newContent) != len(origContent) {
-		return true, wbName, nil
+		return true, nil
 	}
 
 	for i, line := range origContent {
 		if line != newContent[i] {
-			return true, wbName, nil
+			return true, nil
 		}
 	}
-	return false, wbName, nil
+	return false, nil
+}
+
+func fastEntry(wbName, entry string) (err error) {
+	if !lib.WbExists(wbName) {
+		wbName, err = getNameFromShortcut(wbName)
+		if err != nil {
+			return err
+		}
+	}
+
+	// remove outer quotes if exist
+	if len(entry) > 0 &&
+		entry[0] == '"' &&
+		entry[len(entry)-1] == '"' {
+
+		entry = entry[1 : len(entry)-1]
+	}
+
+	err = lib.AppendWB(wbName, entry)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("appended entry to %v\n", wbName)
+	return nil
 }
 
 func duplicate(copyWB, newWB string) error {

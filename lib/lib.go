@@ -127,7 +127,30 @@ func PrependWB(wbName, entry string) error {
 	}
 
 	return nil
+}
 
+// append a string to a new top line within a wb
+func AppendWB(wbName, entry string) error {
+	path, err := GetWbPath(wbName)
+	if err != nil {
+		return err
+	}
+	if !cmn.FileExists(path) {
+		return err
+	}
+
+	content, err := cmn.ReadLines(path)
+	if err != nil {
+		return err
+	}
+
+	content = append(content, entry)
+
+	err = cmn.WriteLines(content, path)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // nolint
