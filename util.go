@@ -269,7 +269,7 @@ func fastEntry(wbName, entry string) (err error) {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("appended entry to %v\n", wbName)
+	fmt.Printf("prepended entry to %v\n", wbName)
 	return nil
 }
 
