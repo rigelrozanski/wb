@@ -265,7 +265,7 @@ func fastEntry(wbName, entry string) (err error) {
 		entry = entry[1 : len(entry)-1]
 	}
 
-	err = lib.AppendWB(wbName, entry)
+	err = lib.PrependWB(wbName, entry)
 	if err != nil {
 		return err
 	}
@@ -299,6 +299,35 @@ func duplicate(copyWB, newWB string) error {
 		return err
 	}
 	fmt.Printf("succesfully copied from %v to %v\n", copyWB, newWB)
+	return nil
+}
+
+func rename(oldName, newName string) error {
+	oldPath, err := lib.GetWbPath(oldName)
+	if err != nil {
+		return err
+	}
+	if !cmn.FileExists(oldPath) {
+		return fmt.Errorf("error can't copy non-existent white board, please create it first by using %v", keyNew)
+	}
+
+	newPath, err := lib.GetWbPath(newName)
+	if err != nil {
+		return err
+	}
+	if cmn.FileExists(newPath) {
+		return errors.New("error i will not overwrite an existing wb! ")
+	}
+
+	err = cmn.Move(oldPath, newPath)
+	if err != nil {
+		return err
+	}
+	err = lib.ReplaceInLS(lsWB, oldName, newName)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("succesfully renamed wb from %v to %v\n", oldName, newName)
 	return nil
 }
 

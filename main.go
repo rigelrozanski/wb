@@ -13,6 +13,7 @@ import (
 const (
 	keyNew        = "new"
 	keyCopy       = "cp"
+	keyRename     = "rename"
 	keyView       = "cat"
 	keyRemove     = "rm"
 	keyRecover    = "recover"
@@ -35,18 +36,19 @@ const (
 
 Usage: 
 
-wb [name]            -> vim into a wb
-wb [name] [entry]    -> fast entry appended as new line in wb
-wb new [name]        -> create a new wb
-wb cp [copy] [name]  -> duplicate a wb
-wb cat [name]        -> print wb contents to console
-wb rm [name]         -> remove a wb (add to trash)
-wb recover [name]    -> remove a wb from trash
-wb empty-trash       -> empty trash
-wb ls                -> list all the wb in console
-wb log               -> list the log
-wb stats             -> list git statistics per wb
-wb push [msg]        -> git push the boards directory
+wb [name]               -> vim into a wb
+wb [name] [entry]       -> fast entry appended as new line in wb
+wb new [name]           -> create a new wb
+wb cp [copy] [name]     -> duplicate a wb
+wb rename [old] [name]  -> rename a wb
+wb cat [name]           -> print wb contents to console
+wb rm [name]            -> remove a wb (add to trash)
+wb recover [name]       -> remove a wb from trash
+wb empty-trash          -> empty trash
+wb ls                   -> list all the wb in console
+wb log                  -> list the log
+wb stats                -> list git statistics per wb
+wb push [msg]           -> git push the boards directory
 
 notes:
 - if the [name] is not provided, 
@@ -228,6 +230,12 @@ func handle3Args(args []string) error {
 			return err
 		}
 		log("duplicated from "+args[1], args[2])
+	case keyRename:
+		err := rename(args[1], args[2])
+		if err != nil {
+			return err
+		}
+		log("renamed from "+args[1], args[2])
 	default:
 		name := args[0]
 		entry := strings.Join(args[1:], " ")

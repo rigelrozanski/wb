@@ -63,9 +63,9 @@ func todoStr(name string) string {
 }
 
 // get the contents of a local wb
-func RemoveFromLS(lsname, remove string) error {
+func RemoveFromLS(lsName, remove string) error {
 
-	path, err := GetWbPath(lsname)
+	path, err := GetWbPath(lsName)
 	if err != nil {
 		return err
 	}
@@ -95,6 +95,17 @@ func AddToLS(lsName, newWB string) error {
 	return PrependWB(lsName, todoStr(newWB))
 }
 
+// replace a string in ls
+func ReplaceInLS(lsName, oldName, newName string) error {
+	path, err := GetWbPath(lsName)
+	if err != nil {
+		return err
+	}
+	oldName = fmt.Sprintf("[%v]", oldName)
+	newName = fmt.Sprintf("[%v]", newName)
+	return cmn.ReplaceAllStringInFile(path, oldName, newName)
+}
+
 // nolint
 func MustPrependWB(wbName, entry string) {
 	err := PrependWB(wbName, entry)
@@ -111,7 +122,7 @@ func PrependWB(wbName, entry string) error {
 		return err
 	}
 	if !cmn.FileExists(path) {
-		return err
+		return fmt.Errorf("file as %v does not exist", path)
 	}
 
 	content, err := cmn.ReadLines(path)
@@ -136,7 +147,7 @@ func AppendWB(wbName, entry string) error {
 		return err
 	}
 	if !cmn.FileExists(path) {
-		return err
+		return fmt.Errorf("file as %v does not exist", path)
 	}
 
 	content, err := cmn.ReadLines(path)
