@@ -64,7 +64,7 @@ func main() {
 	var err error
 	switch len(args) {
 	case 0:
-		err = openDefaultWB()
+		err = edit(defaultWB)
 	case 1:
 		err = handle1Args(args)
 	case 2:
@@ -81,19 +81,7 @@ func main() {
 	}
 }
 
-func openDefaultWB() error {
-	// open the main wb
-	modified, err := edit(defaultWB)
-	if err != nil {
-		return err
-	}
-	if modified {
-		log("modified wb", defaultWB)
-	}
-	return nil
-}
-
-func handle1Args(args []string) error {
+func handle1Args(args []string) (err error) {
 	if len(args) != 1 {
 		panic("improper args")
 	}
@@ -101,53 +89,25 @@ func handle1Args(args []string) error {
 	case keyHelp1, keyHelp2:
 		fmt.Println(help)
 	case keyPush:
-		err := push(fmt.Sprintf("%v", time.Now()))
-		if err != nil {
-			return err
-		}
+		err = push(fmt.Sprintf("%v", time.Now()))
 		lib.MustClearWB(logWB)
-		log("pushed", "n/a")
 	case keyView:
-		err := view(defaultWB)
-		if err != nil {
-			return err
-		}
+		err = view(defaultWB)
 	case keyList:
-		err := list()
-		if err != nil {
-			return err
-		}
+		err = list()
 	case keyEmptyTrash:
-		err := emptyTrash()
-		if err != nil {
-			return err
-		}
-		log("emptied trash", "n/a")
+		err = emptyTrash()
 	case keyLog:
-		err := listLog()
-		if err != nil {
-			return err
-		}
+		err = listLog()
 	case keyStats:
-		err := listStats()
-		if err != nil {
-			return err
-		}
+		err = listStats()
 	case keyNew, keyRemove:
 		fmt.Println("invalid argments, must specify name of board")
 	default:
-		// open the wb board with the name of the argument
-		name := args[0]
-		modified, err := edit(name)
-		if err != nil {
-			return err
-		}
-		if modified {
-			log("modified wb", name)
-		}
+		err = edit(args[0])
 	}
 
-	return nil
+	return err
 }
 
 // TODO this is spagetti - fix!
@@ -185,30 +145,15 @@ func handle2Args(args []string) error {
 	switch {
 	case Bnew:
 		name := args[boardArg]
-		err := freshWB(name)
-		if err != nil {
-			return err
-		}
-		log("created wb", name)
+		return freshWB(name)
 	case Bview:
-		err := view(args[boardArg])
-		if err != nil {
-			return err
-		}
+		return view(args[boardArg])
 	case Bdelete:
 		name := args[boardArg]
-		err := remove(name)
-		if err != nil {
-			return err
-		}
-		log("deleted wb", name)
+		return remove(name)
 	case Brecover:
 		name := args[boardArg]
-		err := recoverWb(name)
-		if err != nil {
-			return err
-		}
-		log("recovered wb", name)
+		return recoverWb(name)
 	default:
 		name := args[0]
 		entry := args[1]
@@ -225,22 +170,13 @@ func handle3Args(args []string) error {
 
 	switch args[0] {
 	case keyCopy:
-		err := duplicate(args[1], args[2])
-		if err != nil {
-			return err
-		}
-		log("duplicated from "+args[1], args[2])
+		return duplicate(args[1], args[2])
 	case keyRename:
-		err := rename(args[1], args[2])
-		if err != nil {
-			return err
-		}
-		log("renamed from "+args[1], args[2])
+		return rename(args[1], args[2])
 	default:
 		name := args[0]
 		entry := strings.Join(args[1:], " ")
 		return fastEntry(name, entry)
 	}
-
 	return nil
 }

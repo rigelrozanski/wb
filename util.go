@@ -18,8 +18,8 @@ import (
 	cmn "github.com/rigelrozanski/common"
 )
 
-func log(action, wbName string) {
-	lib.MustPrependWB(logWB, fmt.Sprintf("time: %v\taction: %v\t wbName: %v", time.Now(), action, wbName))
+func log(action, name string) {
+	lib.MustPrependWB(logWB, fmt.Sprintf("time: %v\taction: %v\t name: %v", time.Now(), action, name))
 }
 
 func list() error {
@@ -118,33 +118,35 @@ func visit(path string, f os.FileInfo, err error) error {
 	return nil
 }
 
-func remove(wbName string) error {
-	err := lib.MoveWbToTrash(wbName)
+func remove(name string) error {
+	err := lib.MoveWbToTrash(name)
 	if err != nil {
 		return err
 	}
 
-	err = lib.RemoveFromLS(lsWB, wbName)
+	err = lib.RemoveFromLS(lsWB, name)
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("roger, deleted successfully")
+	log("deleted wb", name)
 	return nil
 }
 
-func recoverWb(wbName string) error {
-	err := lib.RecoverWbFromTrash(wbName)
+func recoverWb(name string) error {
+	err := lib.RecoverWbFromTrash(name)
 	if err != nil {
 		return err
 	}
 
-	err = lib.AddToLS(lsWB, wbName)
+	err = lib.AddToLS(lsWB, name)
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("roger, recovered")
+	log("recovered wb", name)
 	return nil
 }
 
@@ -154,11 +156,12 @@ func emptyTrash() error {
 		return err
 	}
 	fmt.Println("roger, emptied the trash")
+	log("emptied trash", "n/a")
 	return nil
 }
 
-func freshWB(wbName string) error {
-	wbPath, err := lib.GetWbPath(wbName)
+func freshWB(name string) error {
+	wbPath, err := lib.GetWbPath(name)
 	if err != nil {
 		return err
 	}
@@ -172,16 +175,20 @@ func freshWB(wbName string) error {
 	if err != nil {
 		return err
 	}
-	err = lib.AddToLS(lsWB, wbName)
+	err = lib.AddToLS(lsWB, name)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Squeaky clean whiteboard created for", wbName)
+	fmt.Println("Squeaky clean whiteboard created for", name)
 
 	//now edit the wb
-	_, err = edit(wbName)
-	return err
+	err = edit(name)
+	if err != nil {
+		return err
+	}
+	log("created wb", name)
+	return nil
 }
 
 func getNameFromShortcut(shortcutName string) (name string, err error) {
@@ -208,19 +215,19 @@ func getNameFromShortcut(shortcutName string) (name string, err error) {
 	return name, nil
 }
 
-func edit(wbName string) (modified bool, err error) {
+func edit(name string) (err error) {
 
-	origContent, found := lib.GetWB(wbName)
+	origContent, found := lib.GetWB(name)
 	if !found {
-		wbName, err = getNameFromShortcut(wbName)
+		name, err = getNameFromShortcut(name)
 		if err != nil {
-			return false, err
+			return err
 		}
 	}
 
-	wbPath, err := lib.GetWbPath(wbName)
+	wbPath, err := lib.GetWbPath(name)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	cmd := exec.Command("vim", "-c", "+normal 1G1|", wbPath) //start in the upper left corner nomatter
@@ -228,30 +235,33 @@ func edit(wbName string) (modified bool, err error) {
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
 	if err != nil {
-		return false, err
+		return err
 	}
 
+	// TODO to compare file bytes directly
 	// determine if was modified
-	newContent, found := lib.GetWB(wbName)
+	modified := false
+	newContent, found := lib.GetWB(name)
 	if !found {
 		panic("wuz found now isn't")
 	}
-
 	if len(newContent) != len(origContent) {
-		return true, nil
+		modified = true
 	}
-
 	for i, line := range origContent {
 		if line != newContent[i] {
-			return true, nil
+			modified = true
 		}
 	}
-	return false, nil
+	if modified {
+		log("modified wb", name)
+	}
+	return nil
 }
 
-func fastEntry(wbName, entry string) (err error) {
-	if !lib.WbExists(wbName) {
-		wbName, err = getNameFromShortcut(wbName)
+func fastEntry(name, entry string) (err error) {
+	if !lib.WbExists(name) {
+		name, err = getNameFromShortcut(name)
 		if err != nil {
 			return err
 		}
@@ -265,11 +275,12 @@ func fastEntry(wbName, entry string) (err error) {
 		entry = entry[1 : len(entry)-1]
 	}
 
-	err = lib.PrependWB(wbName, entry)
+	err = lib.PrependWB(name, entry)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("prepended entry to %v\n", wbName)
+	fmt.Printf("prepended entry to %v\n", name)
+	log("modified wb", name)
 	return nil
 }
 
@@ -299,6 +310,7 @@ func duplicate(copyWB, newWB string) error {
 		return err
 	}
 	fmt.Printf("succesfully copied from %v to %v\n", copyWB, newWB)
+	log("duplicated from %v "+copyWB, newWB)
 	return nil
 }
 
@@ -328,22 +340,23 @@ func rename(oldName, newName string) error {
 		return err
 	}
 	fmt.Printf("succesfully renamed wb from %v to %v\n", oldName, newName)
+	log("renamed from "+oldName, newName)
 	return nil
 }
 
-func view(wbName string) error {
-	wbPath, err := lib.GetWbPath(wbName)
+func view(name string) error {
+	wbPath, err := lib.GetWbPath(name)
 	if err != nil {
 		return err
 	}
 
 	switch {
-	case !cmn.FileExists(wbPath) && wbName == defaultWB:
+	case !cmn.FileExists(wbPath) && name == defaultWB:
 		err := freshWB(defaultWB) //automatically create the default wb if it doesn't exist
 		if err != nil {
 			return err
 		}
-	case !cmn.FileExists(wbPath) && wbName != defaultWB:
+	case !cmn.FileExists(wbPath) && name != defaultWB:
 		fmt.Println("error can't view non-existent white board, please create it first by using ", keyNew)
 	default:
 		wb, err := ioutil.ReadFile(wbPath)
@@ -378,5 +391,6 @@ git -C "` + wbBackupDir + `" push
 		return err
 	}
 	fmt.Println("backup git push complete!")
+	log("pushed", "n/a")
 	return nil
 }

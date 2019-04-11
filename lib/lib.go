@@ -107,17 +107,17 @@ func ReplaceInLS(lsName, oldName, newName string) error {
 }
 
 // nolint
-func MustPrependWB(wbName, entry string) {
-	err := PrependWB(wbName, entry)
+func MustPrependWB(name, entry string) {
+	err := PrependWB(name, entry)
 	if err != nil {
 		panic(err)
 	}
 }
 
 // prepend a string to a new top line within a wb
-func PrependWB(wbName, entry string) error {
+func PrependWB(name, entry string) error {
 
-	path, err := GetWbPath(wbName)
+	path, err := GetWbPath(name)
 	if err != nil {
 		return err
 	}
@@ -141,8 +141,8 @@ func PrependWB(wbName, entry string) error {
 }
 
 // append a string to a new top line within a wb
-func AppendWB(wbName, entry string) error {
-	path, err := GetWbPath(wbName)
+func AppendWB(name, entry string) error {
+	path, err := GetWbPath(name)
 	if err != nil {
 		return err
 	}
@@ -165,28 +165,26 @@ func AppendWB(wbName, entry string) error {
 }
 
 // nolint
-func MustClearWB(wbName string) {
-	err := ClearWB(wbName)
+func MustClearWB(name string) {
+	err := ClearWB(name)
 	if err != nil {
 		panic(err)
 	}
 }
 
 // remove all the content of wb
-func ClearWB(wbName string) error {
-	path, err := GetWbPath(wbName)
+func ClearWB(name string) error {
+	path, err := GetWbPath(name)
 	if err != nil {
 		return err
 	}
 	if !cmn.FileExists(path) {
 		return err
 	}
-
 	err = cmn.WriteLines([]string{}, path)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -204,13 +202,13 @@ func WbExists(name string) (found bool) {
 }
 
 // get the full path of a wb
-func GetWbPath(wbName string) (string, error) {
-	return GetRepoPath(wbName, BoardsDir)
+func GetWbPath(name string) (string, error) {
+	return GetRepoPath(name, BoardsDir)
 }
 
 // get the full path of a wb in the trash
-func GetWbInTrashPath(wbName string) (string, error) {
-	return GetRepoPath(wbName, TrashDir)
+func GetWbInTrashPath(name string) (string, error) {
+	return GetRepoPath(name, TrashDir)
 }
 
 // get the full path of a wb in the trash
@@ -219,18 +217,18 @@ func GetTrashPath() (string, error) {
 }
 
 // get the full path of a wb in a directory
-func GetRepoPath(wbName, dir string) (string, error) {
+func GetRepoPath(name, dir string) (string, error) {
 	wbBackupRepoPath, err := GetWbBackupRepoPath()
 	if err != nil {
 		return "", err
 	}
-	return pathL.Join(wbBackupRepoPath, dir, wbName), nil
+	return pathL.Join(wbBackupRepoPath, dir, name), nil
 }
 
 // move a wb from the boards dir to the trash DIR
-func MoveWbToTrash(wbName string) error {
+func MoveWbToTrash(name string) error {
 
-	wbBoardsPath, err := GetWbPath(wbName)
+	wbBoardsPath, err := GetWbPath(name)
 	if err != nil {
 		return err
 	}
@@ -245,7 +243,7 @@ func MoveWbToTrash(wbName string) error {
 	}
 	os.MkdirAll(trashPath, os.ModePerm)
 
-	wbTrashPath, err := GetWbInTrashPath(wbName)
+	wbTrashPath, err := GetWbInTrashPath(name)
 	if err != nil {
 		return err
 	}
@@ -283,13 +281,13 @@ func EmptyTrash() error {
 }
 
 // move a wb from the boards dir to the trash DIR
-func RecoverWbFromTrash(wbName string) error {
+func RecoverWbFromTrash(name string) error {
 
-	wbBoardsPath, err := GetWbPath(wbName)
+	wbBoardsPath, err := GetWbPath(name)
 	if err != nil {
 		return err
 	}
-	wbTrashPath, err := GetWbInTrashPath(wbName)
+	wbTrashPath, err := GetWbInTrashPath(name)
 	if err != nil {
 		return err
 	}
