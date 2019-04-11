@@ -247,10 +247,11 @@ func edit(name string) (err error) {
 	}
 	if len(newContent) != len(origContent) {
 		modified = true
-	}
-	for i, line := range origContent {
-		if line != newContent[i] {
-			modified = true
+	} else {
+		for i, line := range origContent {
+			if line != newContent[i] {
+				modified = true
+			}
 		}
 	}
 	if modified {
