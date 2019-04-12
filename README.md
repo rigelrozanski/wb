@@ -22,17 +22,26 @@ and saving notes from command line
 The following are a list of commands that can be run in terminal. wb can be run
 while navigated to any directory. 
 
-| Command    | Description                                     |
-|------------|-------------------------------------------------|
-| wb         | Opens the default whiteboard                    |
-| wb cat     | Prints the default whiteboard                   |
-| wb new foo | Create new wb named 'foo'                       |
-| wb foo     | Open an existing whiteboard named 'foo'         |
-| wb cat foo | Prints the contents of 'foo'                    |
-| wb rm foo  | Deletes 'foo'                                   |
-| wb ls      | List all whiteboards                            |
-| wb log     | List all changes to whiteboards since last push |
-| wb stats   | List repo stats, additions, deletions per wb    |
+```
+wb [name]               -> vim into a wb
+wb [name] [entry]       -> fast entry appended as new line in wb
+wb new [name]           -> create a new wb
+wb cp [copy] [name]     -> duplicate a wb
+wb rename [old] [name]  -> rename a wb
+wb cat [name]           -> print wb contents to console
+wb rm [name]            -> remove a wb (add to trash)
+wb recover [name]       -> remove a wb from trash
+wb empty-trash          -> empty trash
+wb ls                   -> list all the wb in console
+wb log                  -> list the log
+wb stats                -> list git statistics per wb
+wb push [msg]           -> git push the boards directory
+
+notes:
+- if the [name] is not provided, 
+  the default board named 'wb' will be used
+- special reserved wb names: wb, lsls, loglog
+```
 
 ### Other Notes
  - a file in the root of this repo named config.txt can be used to setup a
