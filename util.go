@@ -251,6 +251,7 @@ func edit(name string) (err error) {
 		for i, line := range origContent {
 			if line != newContent[i] {
 				modified = true
+				break
 			}
 		}
 	}
