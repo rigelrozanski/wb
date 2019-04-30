@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -217,7 +218,7 @@ func getNameFromShortcut(shortcutName string) (name string, err error) {
 
 func edit(name string) (err error) {
 
-	origContent, found := lib.GetWB(name)
+	origWbBz, found := lib.GetWBRaw(name)
 	if !found {
 		name, err = getNameFromShortcut(name)
 		if err != nil {
@@ -238,24 +239,12 @@ func edit(name string) (err error) {
 		return err
 	}
 
-	// TODO to compare file bytes directly
-	// determine if was modified
-	modified := false
-	newContent, found := lib.GetWB(name)
+	// log if there was a modification
+	newWbBz, found := lib.GetWBRaw(name)
 	if !found {
 		panic("wuz found now isn't")
 	}
-	if len(newContent) != len(origContent) {
-		modified = true
-	} else {
-		for i, line := range origContent {
-			if line != newContent[i] {
-				modified = true
-				break
-			}
-		}
-	}
-	if modified {
+	if bytes.Compare(origWbBz, newWbBz) != 0 {
 		log("modified wb", name)
 	}
 	return nil
